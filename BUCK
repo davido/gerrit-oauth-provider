@@ -2,12 +2,12 @@ include_defs('//lib/maven.defs')
 define_license('scribe')
 
 gerrit_plugin(
-  name = 'gerrit-google-oauth-provider',
+  name = 'gerrit-oauth-provider',
   srcs = glob(['src/main/java/**/*.java']),
   resources = glob(['src/main/resources/**/*']),
   manifest_entries = [
-    'Gerrit-PluginName: gerrit-google-oauth-provider',
-    'Gerrit-HttpModule: com.googlesource.gerrit.plugins.google.oauth.provider.HttpModule',
+    'Gerrit-PluginName: gerrit-oauth-provider',
+    'Gerrit-HttpModule: com.googlesource.gerrit.plugins.oauth.HttpModule',
   ],
   provided_deps = ['//lib:gson'],
   deps = [':scribe-oauth'],
@@ -15,7 +15,7 @@ gerrit_plugin(
 
 java_library(
   name = 'classpath',
-  deps = [':gerrit-google-oauth-provider__plugin'],
+  deps = [':gerrit-oauth-provider__plugin'],
 )
 
 maven_jar(

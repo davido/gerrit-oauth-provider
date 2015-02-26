@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.google.oauth.provider;
+package com.googlesource.gerrit.plugins.oauth;
 
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
+import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.OutputFormat;
 import com.google.gerrit.server.config.PluginConfig;
@@ -36,20 +37,24 @@ import org.scribe.oauth.OAuthService;
 
 import java.io.IOException;
 
+import javax.servlet.http.HttpServletResponse;
+
 @Singleton
-class GoogleOAuthService implements OAuthServiceProvider {
+class GitHubOAuthService implements OAuthServiceProvider {
+  static final String CONFIG_SUFFIX = "-github-oauth";
   private static final String PROTECTED_RESOURCE_URL =
-      "https://www.googleapis.com/oauth2/v2/userinfo?alt=json";
-  private static final String SCOPE =
-      "https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email";
+      "https://api.github.com/user";
+
+  private static final String SCOPE = "user:email";
   private final OAuthService service;
 
   @Inject
-  GoogleOAuthService(PluginConfigFactory cfgFactory,
+  GitHubOAuthService(PluginConfigFactory cfgFactory,
       @PluginName String pluginName) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName);
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(
+        pluginName + CONFIG_SUFFIX);
     service = new ServiceBuilder()
-        .provider(Google2Api.class)
+        .provider(GitHub2Api.class)
         .apiKey(cfg.getString("client-id"))
         .apiSecret(cfg.getString("client-secret"))
         .callback(cfg.getString("callback"))
@@ -63,27 +68,30 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   @Override
-  public String getUsername(OAuthToken token) throws IOException {
+  public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     Token t =
         new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
     Response response = request.send();
+    if (response.getCode() != HttpServletResponse.SC_OK) {
+      throw new IOException(String.format("Status %s (%s) for request %s",
+          response.getCode(), response.getBody(), request.getUrl()));
+    }
     JsonElement userJson =
         OutputFormat.JSON.newGson().fromJson(response.getBody(),
             JsonElement.class);
     if (userJson.isJsonObject()) {
       JsonObject jsonObject = userJson.getAsJsonObject();
-      JsonElement jsonElement = jsonObject.getAsJsonObject().get("name");
-      if (jsonElement != null) {
-        return jsonElement.getAsString();
-      } else {
-        throw new IOException(String.format(
-            "Invalid JSON '%s': cannot find login field", userJson));
-      }
+      JsonElement email = jsonObject.get("email");
+      JsonElement name = jsonObject.get("name");
+      JsonElement id = jsonObject.get("id");
+      return new OAuthUserInfo(id.getAsString(),
+          email.isJsonNull() ? null : email.getAsString(),
+          name.isJsonNull() ? null : name.getAsString());
     } else {
-      throw new IOException(String.format(
-          "Invalid JSON '%s': not a JSON Object", userJson));
+        throw new IOException(String.format(
+            "Invalid JSON '%s': not a JSON Object", userJson));
     }
   }
 
@@ -117,6 +125,6 @@ class GoogleOAuthService implements OAuthServiceProvider {
 
   @Override
   public String getName() {
-    return "Google OAuth2";
+    return "GitHub OAuth2";
   }
 }
