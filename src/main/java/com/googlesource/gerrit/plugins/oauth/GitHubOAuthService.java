@@ -86,7 +86,9 @@ class GitHubOAuthService implements OAuthServiceProvider {
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
       JsonElement id = jsonObject.get("id");
+      JsonElement login = jsonObject.get("login");
       return new OAuthUserInfo(id.getAsString(),
+          login.isJsonNull() ? null : login.getAsString(),
           email.isJsonNull() ? null : email.getAsString(),
           name.isJsonNull() ? null : name.getAsString());
     } else {
