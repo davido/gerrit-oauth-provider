@@ -43,8 +43,10 @@ import javax.servlet.http.HttpServletResponse;
 class GoogleOAuthService implements OAuthServiceProvider {
   static final String CONFIG_SUFFIX = "-google-oauth";
   private static final String PROTECTED_RESOURCE_URL =
-  "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
-  private static final String SCOPE = "email profile";
+      "https://www.googleapis.com/userinfo/v2/me";
+  //"https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+  // profile causes username to disappear
+  private static final String SCOPE = "email";
   private final OAuthService service;
 
   @Inject
@@ -84,10 +86,11 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
-      JsonElement id = jsonObject.get("sub");
-      return new OAuthUserInfo(id.getAsString(),
-          email.isJsonNull() ? null : email.getAsString(),
-          name.isJsonNull() ? null : name.getAsString());
+      JsonElement id = jsonObject.get("id");
+      return new OAuthUserInfo(id.getAsString() /*externalId*/,
+          name.isJsonNull() ? null : name.getAsString() /*username*/,
+          email.isJsonNull() ? null : email.getAsString() /*email*/,
+	      null /*displayName*/);
     } else {
         throw new IOException(String.format(
             "Invalid JSON '%s': not a JSON Object", userJson));
