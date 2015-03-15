@@ -14,17 +14,20 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.OutputFormat;
+import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 
 import org.scribe.builder.ServiceBuilder;
@@ -50,14 +53,17 @@ class GitHubOAuthService implements OAuthServiceProvider {
 
   @Inject
   GitHubOAuthService(PluginConfigFactory cfgFactory,
-      @PluginName String pluginName) {
+      @PluginName String pluginName,
+      @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(
         pluginName + CONFIG_SUFFIX);
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
+        urlProvider.get()) + "/";
     service = new ServiceBuilder()
         .provider(GitHub2Api.class)
         .apiKey(cfg.getString("client-id"))
         .apiSecret(cfg.getString("client-secret"))
-        .callback(cfg.getString("callback"))
+        .callback(canonicalWebUrl)
         .scope(SCOPE)
         .build();
   }
@@ -90,7 +96,8 @@ class GitHubOAuthService implements OAuthServiceProvider {
       return new OAuthUserInfo(id.getAsString(),
           login.isJsonNull() ? null : login.getAsString(),
           email.isJsonNull() ? null : email.getAsString(),
-          name.isJsonNull() ? null : name.getAsString());
+          name.isJsonNull() ? null : name.getAsString(),
+          null);
     } else {
         throw new IOException(String.format(
             "Invalid JSON '%s': not a JSON Object", userJson));

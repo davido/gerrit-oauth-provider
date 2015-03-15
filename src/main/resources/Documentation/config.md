@@ -16,13 +16,24 @@ appended with provider suffix: `-google-oauth` and `-github-oauth`:
   [plugin "@PLUGIN@-google-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    callback = "http://localhost:8080/oauth"
+    link-to-existing-openid-accounts = true
 
   [plugin "@PLUGIN@-github-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    callback = "http://localhost:8080/oauth"
 ```
 
-When one from the sections above is omitted, OAuth SSO is used. The login form with provider selection isn’t shown. When both sections are omitted, Gerrit will not start.
+When one from the sections above is omitted, OAuth SSO is used.
+The login form with provider selection isn’t shown. When both
+sections are omitted, Gerrit will not start.
+
+Google OAuth provider seamlessly supports linking of OAuth identity
+to existing OpenID accounts. This feature is deactivated by default.
+To activate it, add
+
+```
+plugin.gerrit-oauth-provider-google-oauth.link-to-existing-openid-accounts = true
+```
+
+to Google OAuth configuration section.
 

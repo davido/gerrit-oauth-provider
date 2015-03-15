@@ -9,7 +9,11 @@ gerrit_plugin(
     'Gerrit-PluginName: gerrit-oauth-provider',
     'Gerrit-HttpModule: com.googlesource.gerrit.plugins.oauth.HttpModule',
   ],
-  provided_deps = ['//lib:gson'],
+  provided_deps = [
+    '//lib:guava',
+    '//lib:gson',
+    '//lib/commons:codec',
+  ],
   deps = [':scribe-oauth'],
 )
 
