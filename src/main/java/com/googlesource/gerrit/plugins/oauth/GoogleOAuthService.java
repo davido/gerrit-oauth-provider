@@ -40,6 +40,8 @@ import org.scribe.model.Token;
 import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -50,6 +52,8 @@ import javax.servlet.http.HttpServletResponse;
 
 @Singleton
 class GoogleOAuthService implements OAuthServiceProvider {
+  private static final Logger log =
+      LoggerFactory.getLogger(GoogleOAuthService.class);
   static final String CONFIG_SUFFIX = "-google-oauth";
   private static final String PROTECTED_RESOURCE_URL =
       "https://www.googleapis.com/userinfo/v2/me";
@@ -69,15 +73,22 @@ class GoogleOAuthService implements OAuthServiceProvider {
         urlProvider.get()) + "/";
     this.linkToExistingOpenIDAccounts = cfg.getBoolean(
         "link-to-existing-openid-accounts", false);
+    String scope = linkToExistingOpenIDAccounts
+        ? "openid " + SCOPE
+        : SCOPE;
     this.service = new ServiceBuilder()
         .provider(Google2Api.class)
         .apiKey(cfg.getString("client-id"))
         .apiSecret(cfg.getString("client-secret"))
         .callback(canonicalWebUrl + "oauth")
-        .scope(linkToExistingOpenIDAccounts
-            ? "openid " + SCOPE
-            : SCOPE)
+        .scope(scope)
         .build();
+    if (log.isDebugEnabled()) {
+      log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
+      log.debug("OAuth2: scope={}", scope);
+      log.debug("OAuth2: linkToExistingOpenIDAccounts={}",
+          linkToExistingOpenIDAccounts);
+    }
   }
 
   @Override
@@ -143,8 +154,11 @@ class GoogleOAuthService implements OAuthServiceProvider {
             JsonObject openidIdObj = openidIdToken.getAsJsonObject();
             JsonElement openidIdElement = openidIdObj.get("openid_id");
             if (!openidIdElement.isJsonNull()) {
-              return openidIdElement.getAsString();
+              String openIdId = openidIdElement.getAsString();
+              log.debug("OAuth2: openid_id={}", openIdId);
+              return openIdId;
             }
+            log.debug("OAuth2: JWT doesn't contain openid_id element");
           }
         }
       }
@@ -197,6 +211,9 @@ class GoogleOAuthService implements OAuthServiceProvider {
       }
     } catch (UnsupportedEncodingException e) {
       throw new IllegalArgumentException(e);
+    }
+    if (log.isDebugEnabled()) {
+      log.debug("OAuth2: authorization URL={}", url);
     }
     return url;
   }
