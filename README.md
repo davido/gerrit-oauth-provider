@@ -4,7 +4,7 @@ OAuth2 authentication provider for Gerrit Code Review
 This plugin depends on small extensions to supported OAuth
 authentication point, that still pending for review. To build
 the plugin against stable-2.10 Gerrit tree, these changes must
-be cherry-picked: [1],[2] and [3].
+be cherry-picked: [1].
 
 Supported OAuth providers:
 --------------------------
@@ -23,11 +23,7 @@ to plugin config section:
 
 ```
 [plugin "gerrit-oauth-provider-google-oauth"]
-    client-id = "<id>"
-    client-secret = "<secret>"
     link-to-existing-openid-accounts = true
 ```
 
-* [1] https://gerrit-review.googlesource.com/66310
-* [2] https://gerrit-review.googlesource.com/66311
-* [3] https://gerrit-review.googlesource.com/66312
+* [1] https://gerrit-review.googlesource.com/#/q/status:open+project:gerrit+branch:stable-2.10+topic:oauth-authentication-provider
