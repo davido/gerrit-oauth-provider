@@ -3,7 +3,24 @@ Build
 
 This plugin is built with Buck.
 
-Only in Gerrit tree build mode is supported.
+Two build modes are supported: Standalone and in Gerrit tree.
+The standalone build mode is recommended, as this mode doesn't require
+the Gerrit tree to exist locally.
+
+Build in Standalone mode
+------------------------
+
+```
+  git clone --recursive https://github.com/davido/gerrit-oauth-provider
+  cd gerrit-oauth-provider
+  buck build plugin
+```
+
+The output is created in
+
+```
+  buck-out/gen/@PLUGIN@.jar
+```
 
 Build in Gerrit tree
 --------------------
@@ -18,7 +35,7 @@ tree, and issue the command:
 The output is created in
 
 ```
-  buck-out/gen/plugins/gerrit-oauth-provider/gerrit-oauth-provider.jar
+  buck-out/gen/plugins/@PLUGIN@/@PLUGIN@.jar
 ```
 
 This project can be imported into the Eclipse IDE:

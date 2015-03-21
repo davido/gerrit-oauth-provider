@@ -1,0 +1,13 @@
+include_defs('//bucklets/maven_jar.bucklet')
+
+VER = '2.10-SNAPSHOT'
+REPO = MAVEN_LOCAL
+
+maven_jar(
+  name = 'plugin-api',
+  id = 'com.google.gerrit:gerrit-plugin-api:' + VER,
+  sha1 = '686c942bc41cd8f1c9adcdc54a94bcf3e862f4af',
+  license = 'Apache2.0',
+  attach_source = False,
+  repository = REPO,
+)
