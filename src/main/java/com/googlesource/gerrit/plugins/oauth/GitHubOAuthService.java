@@ -63,7 +63,7 @@ class GitHubOAuthService implements OAuthServiceProvider {
         .provider(GitHub2Api.class)
         .apiKey(cfg.getString("client-id"))
         .apiSecret(cfg.getString("client-secret"))
-        .callback(canonicalWebUrl)
+        .callback(canonicalWebUrl + "oauth")
         .scope(SCOPE)
         .build();
   }
