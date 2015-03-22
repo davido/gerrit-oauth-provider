@@ -61,8 +61,8 @@ class GitHubOAuthService implements OAuthServiceProvider {
         urlProvider.get()) + "/";
     service = new ServiceBuilder()
         .provider(GitHub2Api.class)
-        .apiKey(cfg.getString("client-id"))
-        .apiSecret(cfg.getString("client-secret"))
+        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
         .callback(canonicalWebUrl + "oauth")
         .scope(SCOPE)
         .build();

@@ -22,7 +22,7 @@ import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
 import com.google.inject.Inject;
 
-public class HttpModule extends HttpPluginModule {
+class HttpModule extends HttpPluginModule {
 
   private final PluginConfigFactory cfgFactory;
   private final String pluginName;
@@ -38,7 +38,7 @@ public class HttpModule extends HttpPluginModule {
   protected void configureServlets() {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(
         pluginName + GoogleOAuthService.CONFIG_SUFFIX);
-    if (cfg.getString("client-id") != null) {
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
           .annotatedWith(Exports.named(GoogleOAuthService.CONFIG_SUFFIX))
           .to(GoogleOAuthService.class);

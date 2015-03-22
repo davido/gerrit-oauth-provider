@@ -20,6 +20,21 @@ and run the following:
   cd gerrit-oauth-provider && buck build plugin
 ```
 
+Copy the plugin to `$gerit_site/plugins` and re-run init to configure it:
+
+```
+  java -jar gerrit.war init -d <site>
+  [...]
+  *** OAuth Authentication Provider
+  ***
+  Use Google OAuth provider for Gerrit login ? [Y/n]?
+  Application client id          : <client-id>
+  Application client secret      : 
+                confirm password : 
+  Link to OpenID accounts? [true]: 
+  Use GitHub OAuth provider for Gerrit login ? [Y/n]? n
+``` 
+
 License
 -------
 

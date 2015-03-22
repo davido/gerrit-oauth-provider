@@ -72,14 +72,14 @@ class GoogleOAuthService implements OAuthServiceProvider {
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
         urlProvider.get()) + "/";
     this.linkToExistingOpenIDAccounts = cfg.getBoolean(
-        "link-to-existing-openid-accounts", false);
+        InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false);
     String scope = linkToExistingOpenIDAccounts
         ? "openid " + SCOPE
         : SCOPE;
     this.service = new ServiceBuilder()
         .provider(Google2Api.class)
-        .apiKey(cfg.getString("client-id"))
-        .apiSecret(cfg.getString("client-secret"))
+        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
         .callback(canonicalWebUrl + "oauth")
         .scope(scope)
         .build();

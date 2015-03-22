@@ -9,13 +9,18 @@ gerrit_plugin(
   manifest_entries = [
     'Gerrit-PluginName: gerrit-oauth-provider',
     'Gerrit-HttpModule: com.googlesource.gerrit.plugins.oauth.HttpModule',
+    'Gerrit-InitStep: com.googlesource.gerrit.plugins.oauth.InitOAuth',
+    'Implementation-Title: Gerrit OAuth authentication provider',
+    'Implementation-URL: https://github.com/davido/gerrit-oauth-provider',
+  ],
+  deps = [
+    ':scribe'
   ],
   provided_deps = [
     '//lib:guava',
     '//lib:gson',
     '//lib/commons:codec',
   ],
-  deps = [':scribe'],
 )
 
 java_library(
@@ -30,4 +35,3 @@ maven_jar(
   license = 'scribe',
   local_license = True,
 )
-
