@@ -1,29 +1,26 @@
-OAuth2 authentication provider for Gerrit Code Review
-=====================================================
+Gerrit OAuth2 authentication provider
+=====================================
 
-This plugin depends on small extensions to supported OAuth
-authentication point, that still pending for review. To build
-the plugin against stable-2.10 Gerrit tree, these changes must
-be cherry-picked: [1].
-
+With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
---------------------------
 
-* GitHub OAuth2
-* Google OAuth2
+* GitHub
+* Google
 
-Linking OAuth identity to existing Gerrit accounts:
----------------------------------------------------
+See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
 
-As of April 20, 2015 Google shuts down its deprecated OpenID 2.0
-provider. To simplify the migration google-oauth-povider plugin
-seamlessly supports linking of OAuth identity to existing Gerrit
-accounts. To activate it, add the following configuration option
-to plugin config section:
+Installation
+------------
+
+To build the plugin, install [Buck](http://facebook.github.io/buck/setup/install.html)
+and run the following:
 
 ```
-[plugin "gerrit-oauth-provider-google-oauth"]
-    link-to-existing-openid-accounts = true
+  git pull -recursive https://github.com/davido/gerrit-oauth-provider.git
+  cd gerrit-oauth-provider && buck build plugin
 ```
 
-* [1] https://gerrit-review.googlesource.com/#/q/status:open+project:gerrit+branch:stable-2.10+topic:oauth-authentication-provider
+License
+-------
+
+Apache License 2.0
