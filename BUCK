@@ -1,8 +1,6 @@
 include_defs('//bucklets/gerrit_plugin.bucklet')
 include_defs('//bucklets/maven_jar.bucklet')
-
-# TODO(davido): Uncomment when maven_jar.bucklet supports it
-#define_license('scribe')
+define_license('scribe')
 
 gerrit_plugin(
   name = 'gerrit-oauth-provider',
@@ -29,8 +27,7 @@ maven_jar(
   name = 'scribe',
   id = 'org.scribe:scribe:1.3.7',
   sha1 = '583921bed46635d9f529ef5f14f7c9e83367bc6e',
-  license = 'Apache2.0',
-#  license = 'scribe',
-#  local_license = True,
+  license = 'scribe',
+  local_license = True,
 )
 
