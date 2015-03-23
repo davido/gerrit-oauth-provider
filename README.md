@@ -16,7 +16,7 @@ To build the plugin, install [Buck](http://facebook.github.io/buck/setup/install
 and run the following:
 
 ```
-  git pull -recursive https://github.com/davido/gerrit-oauth-provider.git
+  git clone --recursive https://github.com/davido/gerrit-oauth-provider.git
   cd gerrit-oauth-provider && buck build plugin
 ```
 
