@@ -20,7 +20,8 @@ and run the following:
   cd gerrit-oauth-provider && buck build plugin
 ```
 
-Copy the plugin to `$gerit_site/plugins` and re-run init to configure it:
+Copy the `buck-out/gen/gerrit-oauth-provider.jar` to
+`$gerit_site/plugins` and re-run init to configure it:
 
 ```
   java -jar gerrit.war init -d <site>
