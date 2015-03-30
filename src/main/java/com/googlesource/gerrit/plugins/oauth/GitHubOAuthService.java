@@ -69,11 +69,6 @@ class GitHubOAuthService implements OAuthServiceProvider {
   }
 
   @Override
-  public OAuthToken getRequestToken() {
-    throw new IllegalStateException();
-  }
-
-  @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     Token t =
@@ -105,26 +100,17 @@ class GitHubOAuthService implements OAuthServiceProvider {
   }
 
   @Override
-  public OAuthToken getAccessToken(OAuthToken rt,
-      OAuthVerifier rv) {
-    Token ti = null;
-    if (rt != null) {
-      ti = new Token(rt.getToken(), rt.getSecret(), rt.getRaw());
-    }
+  public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(ti, vi);
+    Token to = service.getAccessToken(null, vi);
     OAuthToken result = new OAuthToken(to.getToken(),
         to.getSecret(), to.getRawResponse());
     return result;
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthToken rt) {
-    Token ti = null;
-    if (rt != null) {
-      ti = new Token(rt.getToken(), rt.getSecret(), rt.getRaw());
-    }
-    return service.getAuthorizationUrl(ti);
+  public String getAuthorizationUrl() {
+    return service.getAuthorizationUrl(null);
   }
 
   @Override
