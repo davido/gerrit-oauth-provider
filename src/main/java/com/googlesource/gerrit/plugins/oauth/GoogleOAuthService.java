@@ -92,11 +92,6 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   @Override
-  public OAuthToken getRequestToken() {
-    throw new IllegalStateException("Not supported workflow in OAuth 2.0");
-  }
-
-  @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     Token t =
@@ -183,27 +178,17 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   @Override
-  public OAuthToken getAccessToken(OAuthToken rt,
-      OAuthVerifier rv) {
-    Token ti = null;
-    if (rt != null) {
-      ti = new Token(rt.getToken(), rt.getSecret(), rt.getRaw());
-    }
+  public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(ti, vi);
+    Token to = service.getAccessToken(null, vi);
     OAuthToken result = new OAuthToken(to.getToken(),
         to.getSecret(), to.getRawResponse());
      return result;
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthToken rt) {
-    Token ti = null;
-    if (rt != null) {
-      ti = new Token(rt.getToken(), rt.getSecret(), rt.getRaw());
-    }
-
-    String url = service.getAuthorizationUrl(ti);
+  public String getAuthorizationUrl() {
+    String url = service.getAuthorizationUrl(null);
     try {
       if (linkToExistingOpenIDAccounts) {
         url += "&openid.realm=" + URLEncoder.encode(canonicalWebUrl,

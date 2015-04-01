@@ -1,19 +1,12 @@
 include_defs('//bucklets/maven_jar.bucklet')
 
-# TODO(davido): For now the pending changes in gerrit must be
-# pulled and plugin API must be deployed in local maven repository:
-# buck build api_install
-VER = '2.10-SNAPSHOT'
-REPO = MAVEN_LOCAL
-
-# TODO(davido): Uncomment, when pending changes are merged upstream
-#VER = '2.10.2'
-#REPO = MAVEN_CENTRAL
+VER = '2.10.2'
+REPO = MAVEN_CENTRAL
 
 maven_jar(
   name = 'plugin-api',
   id = 'com.google.gerrit:gerrit-plugin-api:' + VER,
-  sha1 = '686c942bc41cd8f1c9adcdc54a94bcf3e862f4af',
+  sha1 = '4086f90b4d7be9101e84e8e3e76262496d2e12fe',
   license = 'Apache2.0',
   attach_source = False,
   repository = REPO,
