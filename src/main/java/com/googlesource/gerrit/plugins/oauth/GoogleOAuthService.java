@@ -105,10 +105,13 @@ class GoogleOAuthService implements OAuthServiceProvider {
     JsonElement userJson =
         OutputFormat.JSON.newGson().fromJson(response.getBody(),
             JsonElement.class);
+    if (log.isDebugEnabled()) {
+      log.debug("User info response: {}", response.getBody());
+    }
     if (userJson.isJsonObject()) {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
-      if (id.isJsonNull()) {
+      if (id == null || id.isJsonNull()) {
         throw new IOException(String.format(
             "Response doesn't contain id field"));
       }
@@ -121,8 +124,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
       }
       return new OAuthUserInfo(id.getAsString() /*externalId*/,
           null /*username*/,
-          email.isJsonNull() ? null : email.getAsString() /*email*/,
-          name.isJsonNull() ? null : name.getAsString() /*displayName*/,
+          email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
+          name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
 	      claimedIdentifier /*claimedIdentity*/);
     } else {
         throw new IOException(String.format(

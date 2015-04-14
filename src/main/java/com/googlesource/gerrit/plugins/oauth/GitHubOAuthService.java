@@ -37,6 +37,8 @@ import org.scribe.model.Token;
 import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -44,6 +46,8 @@ import javax.servlet.http.HttpServletResponse;
 
 @Singleton
 class GitHubOAuthService implements OAuthServiceProvider {
+  private static final Logger log =
+      LoggerFactory.getLogger(GitHubOAuthService.class);
   static final String CONFIG_SUFFIX = "-github-oauth";
   private static final String PROTECTED_RESOURCE_URL =
       "https://api.github.com/user";
@@ -82,16 +86,23 @@ class GitHubOAuthService implements OAuthServiceProvider {
     JsonElement userJson =
         OutputFormat.JSON.newGson().fromJson(response.getBody(),
             JsonElement.class);
+    if (log.isDebugEnabled()) {
+      log.debug("User info response: {}", response.getBody());
+    }
     if (userJson.isJsonObject()) {
       JsonObject jsonObject = userJson.getAsJsonObject();
+      JsonElement id = jsonObject.get("id");
+      if (id == null || id.isJsonNull()) {
+        throw new IOException(String.format(
+            "Response doesn't contain id field"));
+      }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
-      JsonElement id = jsonObject.get("id");
       JsonElement login = jsonObject.get("login");
       return new OAuthUserInfo(id.getAsString(),
-          login.isJsonNull() ? null : login.getAsString(),
-          email.isJsonNull() ? null : email.getAsString(),
-          name.isJsonNull() ? null : name.getAsString(),
+          login == null || login.isJsonNull() ? null : login.getAsString(),
+          email == null || email.isJsonNull() ? null : email.getAsString(),
+          name == null || name.isJsonNull() ? null : name.getAsString(),
           null);
     } else {
         throw new IOException(String.format(
