@@ -1,6 +1,9 @@
 Gerrit OAuth2 authentication provider
 =====================================
 
+[![Build Status](https://travis-ci.org/davido/gerrit-oauth-provider.svg?branch=master)](https://travis-ci.org/davido/gerrit-oauth-provider)
+
+
 With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
 
