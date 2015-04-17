@@ -16,13 +16,14 @@
 language: java
 
 install:
-  - cd ../..
+  - cd ..
   - mkdir -p build
   - cd build
   - git clone https://github.com/facebook/buck
   - cd buck
   - ant
-  - export PATH=$PATH:$TRAVIS_BUILD_DIR/../../build/buck/bin
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/../build/buck/bin
+  - cd $TRAVIS_BUILD_DIR
 
 script:
   - buck build plugin > buck.log
