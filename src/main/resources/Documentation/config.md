@@ -37,6 +37,21 @@ plugin.gerrit-oauth-provider-google-oauth.link-to-existing-openid-accounts = tru
 
 to Google OAuth configuration section.
 
+It is possile to restrict sign-in to accounts of one (hosted) domain for
+Google OAuth. The `domain` option can be added:
+
+```
+plugin.gerrit-oauth-provider-google-oauth.domain = "mycollege.edu"
+```
+
+(See the spec)[https://developers.google.com/identity/protocols/OpenIDConnect#hd-param]
+for more information. To protect against client-side request modification, the returned
+ID token is checked to contain a matching hd claim (which is proof the account does belong
+to the hosted domain). If the hd claim wasn't included in ID token or didn't match the
+provided `domain` configuration option the authentication is rejected. Note: Because of
+current limitation of the OAuth extension point in gerrit (blame /me for that) the user
+would only see "Unauthorized" message.
+
 ## Obtaining provider authorizations
 
 ### Google

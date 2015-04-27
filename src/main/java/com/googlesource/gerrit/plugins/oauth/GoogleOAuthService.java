@@ -62,6 +62,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private final OAuthService service;
   private final String canonicalWebUrl;
   private final boolean linkToExistingOpenIDAccounts;
+  private final String domain;
 
   @Inject
   GoogleOAuthService(PluginConfigFactory cfgFactory,
@@ -73,6 +74,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
         urlProvider.get()) + "/";
     this.linkToExistingOpenIDAccounts = cfg.getBoolean(
         InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false);
+    this.domain = cfg.getString(InitOAuth.DOMAIN);
     String scope = linkToExistingOpenIDAccounts
         ? "openid " + SCOPE
         : SCOPE;
@@ -88,6 +90,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       log.debug("OAuth2: scope={}", scope);
       log.debug("OAuth2: linkToExistingOpenIDAccounts={}",
           linkToExistingOpenIDAccounts);
+      log.debug("OAuth2: domain={}", domain);
     }
   }
 
@@ -119,8 +122,21 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonElement name = jsonObject.get("name");
       String claimedIdentifier = null;
 
-      if (linkToExistingOpenIDAccounts) {
-        claimedIdentifier = lookupClaimedIdentity(token);
+      if (linkToExistingOpenIDAccounts
+          || !Strings.isNullOrEmpty(domain)) {
+        JsonObject jwtToken = retrieveJWTToken(token);
+        if (linkToExistingOpenIDAccounts) {
+          claimedIdentifier = retrieveClaimedIdentity(jwtToken);
+        }
+        if (!Strings.isNullOrEmpty(domain)) {
+          String hdClaim = retrieveHostedDomain(jwtToken);
+          if (!domain.equalsIgnoreCase(hdClaim)) {
+            // TODO(davido): improve error reporting in OAuth extension point
+            log.error("Error: hosted domain validation failed: {}",
+                Strings.nullToEmpty(hdClaim));
+            return null;
+          }
+        }
       }
       return new OAuthUserInfo(id.getAsString() /*externalId*/,
           null /*username*/,
@@ -133,34 +149,45 @@ class GoogleOAuthService implements OAuthServiceProvider {
     }
   }
 
-  /**
-   * @param token
-   * @return OpenID id token, when contained in id_token, null otherwise
-   */
-  private static String lookupClaimedIdentity(OAuthToken token) {
+  private JsonObject retrieveJWTToken(OAuthToken token) {
     JsonElement idToken =
-      OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
-    if (idToken.isJsonObject()) {
+        OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
+    if (idToken != null && idToken.isJsonObject()) {
       JsonObject idTokenObj = idToken.getAsJsonObject();
       JsonElement idTokenElement = idTokenObj.get("id_token");
-      if (!idTokenElement.isJsonNull()) {
+      if (idTokenElement != null && !idTokenElement.isJsonNull()) {
         String payload = decodePayload(idTokenElement.getAsString());
         if (!Strings.isNullOrEmpty(payload)) {
-          JsonElement openidIdToken =
+          JsonElement tokenJsonElement =
             OutputFormat.JSON.newGson().fromJson(payload, JsonElement.class);
-          if (openidIdToken.isJsonObject()) {
-            JsonObject openidIdObj = openidIdToken.getAsJsonObject();
-            JsonElement openidIdElement = openidIdObj.get("openid_id");
-            if (!openidIdElement.isJsonNull()) {
-              String openIdId = openidIdElement.getAsString();
-              log.debug("OAuth2: openid_id={}", openIdId);
-              return openIdId;
-            }
-            log.debug("OAuth2: JWT doesn't contain openid_id element");
+          if (tokenJsonElement.isJsonObject()) {
+            return tokenJsonElement.getAsJsonObject();
           }
         }
       }
     }
+    return null;
+  }
+
+  private static String retrieveClaimedIdentity(JsonObject jwtToken) {
+    JsonElement openidIdElement = jwtToken.get("openid_id");
+    if (openidIdElement != null && !openidIdElement.isJsonNull()) {
+      String openIdId = openidIdElement.getAsString();
+      log.debug("OAuth2: openid_id={}", openIdId);
+      return openIdId;
+    }
+    log.debug("OAuth2: JWT doesn't contain openid_id element");
+    return null;
+  }
+
+  private static String retrieveHostedDomain(JsonObject jwtToken) {
+    JsonElement hdClaim = jwtToken.get("hd");
+    if (hdClaim != null && !hdClaim.isJsonNull()) {
+      String hd = hdClaim.getAsString();
+      log.debug("OAuth2: hd={}", hd);
+      return hd;
+    }
+    log.debug("OAuth2: JWT doesn't contain hd element");
     return null;
   }
 
@@ -195,6 +222,10 @@ class GoogleOAuthService implements OAuthServiceProvider {
     try {
       if (linkToExistingOpenIDAccounts) {
         url += "&openid.realm=" + URLEncoder.encode(canonicalWebUrl,
+            StandardCharsets.UTF_8.name());
+      }
+      if (!Strings.isNullOrEmpty(domain)) {
+        url += "&hd=" + URLEncoder.encode(domain,
             StandardCharsets.UTF_8.name());
       }
     } catch (UnsupportedEncodingException e) {
