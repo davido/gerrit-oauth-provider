@@ -51,5 +51,13 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
           .to(GitHubOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(
+            pluginName + GitCafeOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString("client-id") != null) {
+        bind(OAuthServiceProvider.class)
+            .annotatedWith(Exports.named(GitCafeOAuthService.CONFIG_SUFFIX))
+            .to(GitCafeOAuthService.class);
+    }
   }
 }
