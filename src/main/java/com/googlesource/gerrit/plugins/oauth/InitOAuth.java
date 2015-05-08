@@ -29,6 +29,7 @@ class InitOAuth implements InitStep {
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
   private final Section githubOAuthProviderSection;
+  private final Section gitcafeOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
@@ -39,6 +40,8 @@ class InitOAuth implements InitStep {
         PLUGIN_SECTION, pluginName + GoogleOAuthService.CONFIG_SUFFIX);
     this.githubOAuthProviderSection = sections.get(
         PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+    this.gitcafeOAuthProviderSection = sections.get(
+        PLUGIN_SECTION, pluginName + GitCafeOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -58,6 +61,12 @@ class InitOAuth implements InitStep {
         true, "Use GitHub OAuth provider for Gerrit login ?");
     if (configueGitHubOAuthProvider) {
       configureOAuth(githubOAuthProviderSection);
+    }
+
+    boolean configueGitCafeOAuthProvider = ui.yesno(
+            true, "Use GitCafe OAuth provider for Gerrit login ?");
+    if (configueGitCafeOAuthProvider) {
+        configureOAuth(gitcafeOAuthProviderSection);
     }
   }
 
