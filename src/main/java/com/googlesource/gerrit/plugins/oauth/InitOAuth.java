@@ -25,6 +25,7 @@ class InitOAuth implements InitStep {
   static final String CLIENT_SECRET = "client-secret";
   static final String LINK_TO_EXISTING_OPENID_ACCOUNT =
       "link-to-existing-openid-accounts";
+  static final String DOMAIN = "domain";
 
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
