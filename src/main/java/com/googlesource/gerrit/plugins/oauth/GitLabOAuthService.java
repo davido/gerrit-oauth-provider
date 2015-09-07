@@ -30,6 +30,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 
+import com.sun.javafx.binding.StringFormatter;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
@@ -49,12 +50,10 @@ class GitLabOAuthService implements OAuthServiceProvider {
   private static final Logger log =
       LoggerFactory.getLogger(GitLabOAuthService.class);
   static final String CONFIG_SUFFIX = "-gitlab-oauth";
-  private static final String PROTECTED_RESOURCE_URL =
-      "https://api.github.com/user";
-
+  private static String PROTECTED_RESOURCE_URL;
   private static final String SCOPE = "user:email";
   private final OAuthService service;
-    private static String domain;
+  private static String domain;
 
 
   @Inject
@@ -63,6 +62,8 @@ class GitLabOAuthService implements OAuthServiceProvider {
       @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(
         pluginName + CONFIG_SUFFIX);
+    GitLabOAuthService.domain = cfg.getString(InitOAuth.DOMAIN);
+    GitLabOAuthService.PROTECTED_RESOURCE_URL = String.format("%s/user", GitLabOAuthService.domain);
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
         urlProvider.get()) + "/";
     service = new ServiceBuilder()
@@ -72,17 +73,20 @@ class GitLabOAuthService implements OAuthServiceProvider {
         .callback(canonicalWebUrl + "oauth")
         .scope(SCOPE)
         .build();
-      GitLabOAuthService.domain = cfg.getString(InitOAuth.DOMAIN);
   }
 
     public static String getDomain()
     {
-        return GitLabOAuthService.domain;
+        return domain;
+    }
+    public static String getResourceUrl()
+    {
+        return PROTECTED_RESOURCE_URL;
     }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
+    OAuthRequest request = new OAuthRequest(Verb.GET, getResourceUrl());
     Token t =
         new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
