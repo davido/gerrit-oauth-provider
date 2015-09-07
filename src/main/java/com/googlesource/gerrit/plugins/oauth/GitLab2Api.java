@@ -29,7 +29,7 @@ public class GitLab2Api extends DefaultApi20 {
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(AUTHORIZE_URL, config.getApiKey(),
+    return String.format(AUTHORIZE_URL, GitLabOAuthService.getDomain(), config.getApiKey(),
         OAuthEncoder.encode(config.getCallback()));
   }
 }
