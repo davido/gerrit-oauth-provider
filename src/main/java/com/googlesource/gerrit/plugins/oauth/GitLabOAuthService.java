@@ -54,6 +54,8 @@ class GitLabOAuthService implements OAuthServiceProvider {
 
   private static final String SCOPE = "user:email";
   private final OAuthService service;
+    private static String domain;
+
 
   @Inject
   GitLabOAuthService(PluginConfigFactory cfgFactory,
@@ -70,8 +72,13 @@ class GitLabOAuthService implements OAuthServiceProvider {
         .callback(canonicalWebUrl + "oauth")
         .scope(SCOPE)
         .build();
-    service.setDomain(cfg.getString(InitOAuth.DOMAIN));
+      GitLabOAuthService.domain = cfg.getString(InitOAuth.DOMAIN);
   }
+
+    public static String getDomain()
+    {
+        return GitLabOAuthService.domain;
+    }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
