@@ -19,12 +19,18 @@ import org.scribe.model.OAuthConfig;
 import org.scribe.utils.OAuthEncoder;
 
 public class GitLab2Api extends DefaultApi20 {
+  private String domain;
   private static final String AUTHORIZE_URL =
-      "https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s";
+      "%s/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code";
+
+  @Override
+  public void setDomain(String domain) {
+      this.domain = domain;
+  }
 
   @Override
   public String getAccessTokenEndpoint() {
-    return "https://github.com/login/oauth/access_token";
+    return String.format("%s/oauth/access_token", this.domain);
   }
 
   @Override

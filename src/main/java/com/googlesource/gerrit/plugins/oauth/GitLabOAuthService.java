@@ -70,6 +70,7 @@ class GitLabOAuthService implements OAuthServiceProvider {
         .callback(canonicalWebUrl + "oauth")
         .scope(SCOPE)
         .build();
+    service.setDomain(cfg.getString(InitOAuth.DOMAIN));
   }
 
   @Override
