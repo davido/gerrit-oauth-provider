@@ -29,7 +29,8 @@ class InitOAuth implements InitStep {
 
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
-  private final Section githubOAuthProviderSection;
+    private final Section githubOAuthProviderSection;
+    private final Section gitLabOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
@@ -38,8 +39,10 @@ class InitOAuth implements InitStep {
     this.ui = ui;
     this.googleOAuthProviderSection = sections.get(
         PLUGIN_SECTION, pluginName + GoogleOAuthService.CONFIG_SUFFIX);
-    this.githubOAuthProviderSection = sections.get(
-        PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+      this.githubOAuthProviderSection = sections.get(
+              PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+      this.gitLabOAuthProviderSection = sections.get(
+              PLUGIN_SECTION, pluginName + GitLabOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -55,11 +58,16 @@ class InitOAuth implements InitStep {
           LINK_TO_EXISTING_OPENID_ACCOUNT, "true");
     }
 
-    boolean configueGitHubOAuthProvider = ui.yesno(
-        true, "Use GitHub OAuth provider for Gerrit login ?");
-    if (configueGitHubOAuthProvider) {
-      configureOAuth(githubOAuthProviderSection);
-    }
+      boolean configueGitHubOAuthProvider = ui.yesno(
+              true, "Use GitHub OAuth provider for Gerrit login ?");
+      if (configueGitHubOAuthProvider) {
+          configureOAuth(githubOAuthProviderSection);
+      }
+      boolean configueGitLabOAuthProvider = ui.yesno(
+              true, "Use GitLab OAuth provider for Gerrit login ?");
+      if (configueGitLabOAuthProvider) {
+          configureOAuth(gitLabOAuthProviderSection);
+      }
   }
 
   private void configureOAuth(Section s) {
