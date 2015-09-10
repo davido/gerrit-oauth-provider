@@ -44,12 +44,19 @@ class HttpModule extends HttpPluginModule {
           .to(GoogleOAuthService.class);
     }
 
-    cfg = cfgFactory.getFromGerritConfig(
-        pluginName + GitHubOAuthService.CONFIG_SUFFIX);
-    if (cfg.getString("client-id") != null) {
-      bind(OAuthServiceProvider.class)
-          .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
-          .to(GitHubOAuthService.class);
-    }
+      cfg = cfgFactory.getFromGerritConfig(
+              pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+      if (cfg.getString("client-id") != null) {
+          bind(OAuthServiceProvider.class)
+                  .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
+                  .to(GitHubOAuthService.class);
+      }
+      cfg = cfgFactory.getFromGerritConfig(
+              pluginName + GitLabOAuthService.CONFIG_SUFFIX);
+      if (cfg.getString("client-id") != null) {
+          bind(OAuthServiceProvider.class)
+                  .annotatedWith(Exports.named(GitLabOAuthService.CONFIG_SUFFIX))
+                  .to(GitLabOAuthService.class);
+      }
   }
 }

@@ -19,8 +19,15 @@ appended with provider suffix: `-google-oauth` and `-github-oauth`:
     link-to-existing-openid-accounts = true
 
   [plugin "@PLUGIN@-github-oauth"]
-    client-id = "<client-id>"
-    client-secret = "<client-secret>"
+      client-id = "<client-id>"
+      client-secret = "<client-secret>"
+      
+  [plugin "@PLUGIN@-gitlab-oauth"]
+      client-id = "<client-id>"
+      client-secret = "<client-secret>"
+      domain = "http://your.gitlab-domain.org"
+          
+          
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
