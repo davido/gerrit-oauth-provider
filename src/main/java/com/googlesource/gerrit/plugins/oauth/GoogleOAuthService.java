@@ -63,7 +63,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private final String canonicalWebUrl;
   private final boolean linkToExistingOpenIDAccounts;
   private final String domain;
-  private final boolean useDomainUsersForSsh;
+  private final boolean useEmailAsUsername;
 
   @Inject
   GoogleOAuthService(PluginConfigFactory cfgFactory,
@@ -76,8 +76,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
     this.linkToExistingOpenIDAccounts = cfg.getBoolean(
         InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false);
     this.domain = cfg.getString(InitOAuth.DOMAIN);
-    this.useDomainUsersForSsh = cfg.getBoolean(
-        InitOAuth.USE_DOMAIN_USERS_FOR_SSH, false);
+    this.useEmailAsUsername = cfg.getBoolean(
+        InitOAuth.USE_EMAIL_AS_USERNAME, false);
     String scope = linkToExistingOpenIDAccounts
         ? "openid " + SCOPE
         : SCOPE;
@@ -94,7 +94,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       log.debug("OAuth2: linkToExistingOpenIDAccounts={}",
           linkToExistingOpenIDAccounts);
       log.debug("OAuth2: domain={}", domain);
-      log.debug("OAuth2: useDomainUsersForSsh={}", useDomainUsersForSsh);
+      log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
   }
 
@@ -143,7 +143,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
           }
         }
       }
-      if (useDomainUsersForSsh && !email.isJsonNull()) {
+      if (useEmailAsUsername && !email.isJsonNull()) {
         login = email.getAsString().split("@")[0];
       }
       return new OAuthUserInfo(id.getAsString() /*externalId*/,

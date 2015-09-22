@@ -50,7 +50,7 @@ to automatically use the user part from the google apps email. This is deactivat
 by default. To activate it, add:
 
 ```
-plugin.gerrit-oauth-provider-google-oauth.use-domain-users-for-ssh = true
+plugin.gerrit-oauth-provider-google-oauth.use-email-as-username = true
 ```
 
 Note: the usernames are unique in gerrit. If a username already exists this will
