@@ -143,7 +143,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
           }
         }
       }
-      if (useDomainUsersForSsh) {
+      if (useDomainUsersForSsh && !email.isJsonNull()) {
         login = email.getAsString().split("@")[0];
       }
       return new OAuthUserInfo(id.getAsString() /*externalId*/,
