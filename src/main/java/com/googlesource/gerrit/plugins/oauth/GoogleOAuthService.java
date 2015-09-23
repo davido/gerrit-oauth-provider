@@ -63,6 +63,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private final String canonicalWebUrl;
   private final boolean linkToExistingOpenIDAccounts;
   private final String domain;
+  private final boolean useEmailAsUsername;
 
   @Inject
   GoogleOAuthService(PluginConfigFactory cfgFactory,
@@ -75,6 +76,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
     this.linkToExistingOpenIDAccounts = cfg.getBoolean(
         InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false);
     this.domain = cfg.getString(InitOAuth.DOMAIN);
+    this.useEmailAsUsername = cfg.getBoolean(
+        InitOAuth.USE_EMAIL_AS_USERNAME, false);
     String scope = linkToExistingOpenIDAccounts
         ? "openid " + SCOPE
         : SCOPE;
@@ -91,6 +94,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       log.debug("OAuth2: linkToExistingOpenIDAccounts={}",
           linkToExistingOpenIDAccounts);
       log.debug("OAuth2: domain={}", domain);
+      log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
   }
 
@@ -121,6 +125,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
       String claimedIdentifier = null;
+      String login = null;
 
       if (linkToExistingOpenIDAccounts
           || !Strings.isNullOrEmpty(domain)) {
@@ -138,8 +143,11 @@ class GoogleOAuthService implements OAuthServiceProvider {
           }
         }
       }
+      if (useEmailAsUsername && !email.isJsonNull()) {
+        login = email.getAsString().split("@")[0];
+      }
       return new OAuthUserInfo(id.getAsString() /*externalId*/,
-          null /*username*/,
+          login /*username*/,
           email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
           name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
 	      claimedIdentifier /*claimedIdentity*/);

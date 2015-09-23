@@ -44,6 +44,18 @@ Google OAuth. The `domain` option can be added:
 plugin.gerrit-oauth-provider-google-oauth.domain = "mycollege.edu"
 ```
 
+By default the Google OAuth provider will not set a username (used for ssh) and
+the user can choose one from the web ui (needed before using ssh). It is possible
+to automatically use the user part from the google apps email. This is deactivated
+by default. To activate it, add:
+
+```
+plugin.gerrit-oauth-provider-google-oauth.use-email-as-username = true
+```
+
+Note: the usernames are unique in gerrit. If a username already exists this will
+be ignored and the user will have to choose a different one from the web ui.
+
 (See the spec)[https://developers.google.com/identity/protocols/OpenIDConnect#hd-param]
 for more information. To protect against client-side request modification, the returned
 ID token is checked to contain a matching hd claim (which is proof the account does belong
@@ -96,7 +108,7 @@ To obtain client-id and client-secret for GitHub OAuth, go to
   `<canonical-web-uri-of-gerrit>/oauth`.
 
   ![Register new application on GitHub](images/github-1.png)
-  
+
 
 After application is registered, the page will show generated client id and
 secret.

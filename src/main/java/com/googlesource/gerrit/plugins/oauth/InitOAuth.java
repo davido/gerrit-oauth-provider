@@ -26,6 +26,8 @@ class InitOAuth implements InitStep {
   static final String LINK_TO_EXISTING_OPENID_ACCOUNT =
       "link-to-existing-openid-accounts";
   static final String DOMAIN = "domain";
+  static final String USE_EMAIL_AS_USERNAME =
+      "use-email-as-username";
 
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
