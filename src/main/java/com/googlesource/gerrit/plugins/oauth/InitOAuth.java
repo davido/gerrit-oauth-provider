@@ -23,44 +23,43 @@ class InitOAuth implements InitStep {
   static final String PLUGIN_SECTION = "plugin";
   static final String CLIENT_ID = "client-id";
   static final String CLIENT_SECRET = "client-secret";
-  static final String LINK_TO_EXISTING_OPENID_ACCOUNT =
-      "link-to-existing-openid-accounts";
+  static final String LINK_TO_EXISTING_OPENID_ACCOUNT = "link-to-existing-openid-accounts";
   static final String DOMAIN = "domain";
-  static final String USE_EMAIL_AS_USERNAME =
-      "use-email-as-username";
+  static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
 
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
   private final Section githubOAuthProviderSection;
+  private final Section bitbucketOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
-      Section.Factory sections,
-      @PluginName String pluginName) {
+            Section.Factory sections,
+            @PluginName String pluginName) {
     this.ui = ui;
-    this.googleOAuthProviderSection = sections.get(
-        PLUGIN_SECTION, pluginName + GoogleOAuthService.CONFIG_SUFFIX);
-    this.githubOAuthProviderSection = sections.get(
-        PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+    this.googleOAuthProviderSection = sections.get(PLUGIN_SECTION, pluginName + GoogleOAuthService.CONFIG_SUFFIX);
+    this.githubOAuthProviderSection = sections.get(PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+    this.bitbucketOAuthProviderSection = sections.get(PLUGIN_SECTION, pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
   public void run() throws Exception {
     ui.header("OAuth Authentication Provider");
 
-    boolean configureGoogleOAuthProvider = ui.yesno(
-        true, "Use Google OAuth provider for Gerrit login ?");
+    boolean configureGoogleOAuthProvider = ui.yesno(true, "Use Google OAuth provider for Gerrit login ?");
     if (configureGoogleOAuthProvider) {
       configureOAuth(googleOAuthProviderSection);
-      googleOAuthProviderSection.string(
-          "Link to OpenID accounts?",
-          LINK_TO_EXISTING_OPENID_ACCOUNT, "true");
+      googleOAuthProviderSection.string("Link to OpenID accounts?", LINK_TO_EXISTING_OPENID_ACCOUNT, "true");
     }
 
-    boolean configueGitHubOAuthProvider = ui.yesno(
-        true, "Use GitHub OAuth provider for Gerrit login ?");
-    if (configueGitHubOAuthProvider) {
+    boolean configureGitHubOAuthProvider = ui.yesno(true, "Use GitHub OAuth provider for Gerrit login ?");
+    if (configureGitHubOAuthProvider) {
       configureOAuth(githubOAuthProviderSection);
+    }
+
+    boolean configureBitbucketOAuthProvider = ui.yesno(true, "Use Bitbucket OAuth provider for Gerrit login ?");
+    if (configureBitbucketOAuthProvider) {
+      configureOAuth(bitbucketOAuthProviderSection);
     }
   }
 

@@ -29,27 +29,33 @@ class HttpModule extends HttpPluginModule {
 
   @Inject
   HttpModule(PluginConfigFactory cfgFactory,
-      @PluginName String pluginName) {
+             @PluginName String pluginName) {
     this.cfgFactory = cfgFactory;
     this.pluginName = pluginName;
   }
 
   @Override
   protected void configureServlets() {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(
-        pluginName + GoogleOAuthService.CONFIG_SUFFIX);
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + GoogleOAuthService.CONFIG_SUFFIX);
+
     if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
-          .annotatedWith(Exports.named(GoogleOAuthService.CONFIG_SUFFIX))
-          .to(GoogleOAuthService.class);
+              .annotatedWith(Exports.named(GoogleOAuthService.CONFIG_SUFFIX))
+              .to(GoogleOAuthService.class);
     }
 
-    cfg = cfgFactory.getFromGerritConfig(
-        pluginName + GitHubOAuthService.CONFIG_SUFFIX);
+    cfg = cfgFactory.getFromGerritConfig(pluginName + GitHubOAuthService.CONFIG_SUFFIX);
     if (cfg.getString("client-id") != null) {
       bind(OAuthServiceProvider.class)
-          .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
-          .to(GitHubOAuthService.class);
+              .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
+              .to(GitHubOAuthService.class);
+    }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString("client-id") != null) {
+      bind(OAuthServiceProvider.class)
+              .annotatedWith(Exports.named(BitbucketOAuthService.CONFIG_SUFFIX))
+              .to(BitbucketOAuthService.class);
     }
   }
 }
