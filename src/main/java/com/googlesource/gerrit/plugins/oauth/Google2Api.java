@@ -48,9 +48,8 @@ public class Google2Api extends DefaultApi20 {
   public String getAuthorizationUrl(OAuthConfig config) {
     Preconditions.checkValidUrl(config.getCallback(),
         "Must provide a valid url as callback. Google does not support OOB");
-    Preconditions
-        .checkEmptyString(config.getScope(),
-            "Must provide a valid value as scope. Google does not support no scope");
+    Preconditions.checkEmptyString(config.getScope(),
+        "Must provide a valid value as scope. Google does not support no scope");
 
     return String.format(AUTHORIZE_URL, config.getApiKey(),
         encode(config.getCallback()), encode(config.getScope()));
@@ -96,9 +95,8 @@ public class Google2Api extends DefaultApi20 {
      */
     @Override
     public Token getAccessToken(Token requestToken, Verifier verifier) {
-      OAuthRequest request =
-          new OAuthRequest(api.getAccessTokenVerb(),
-              api.getAccessTokenEndpoint());
+      OAuthRequest request = new OAuthRequest(api.getAccessTokenVerb(),
+          api.getAccessTokenEndpoint());
       request.addBodyParameter(OAuthConstants.CLIENT_ID, config.getApiKey());
       request.addBodyParameter(OAuthConstants.CLIENT_SECRET,
           config.getApiSecret());
@@ -147,10 +145,11 @@ public class Google2Api extends DefaultApi20 {
     }
   }
 
-  private static final class GoogleJsonTokenExtractor implements
-      AccessTokenExtractor {
-    private Pattern accessTokenPattern = Pattern
-        .compile("\"access_token\"\\s*:\\s*\"(\\S*?)\"");
+  private static final class GoogleJsonTokenExtractor
+      implements AccessTokenExtractor {
+
+    private Pattern accessTokenPattern =
+        Pattern.compile("\"access_token\"\\s*:\\s*\"(\\S*?)\"");
 
     @Override
     public Token extract(String response) {
@@ -161,7 +160,7 @@ public class Google2Api extends DefaultApi20 {
         return new Token(matcher.group(1), "", response);
       } else {
         throw new OAuthException(
-            "Cannot extract an acces token. Response was: " + response);
+            "Cannot extract an access token. Response was: " + response);
       }
     }
   }
