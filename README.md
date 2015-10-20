@@ -7,6 +7,7 @@ Gerrit OAuth2 authentication provider
 With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
 
+* Bitbucket
 * GitHub
 * Google
 
@@ -39,6 +40,7 @@ Copy the `buck-out/gen/gerrit-oauth-provider.jar` to
   [...]
   *** OAuth Authentication Provider
   ***
+  Use Bitbucket OAuth provider for Gerrit login ? [Y/n]? n
   Use Google OAuth provider for Gerrit login ? [Y/n]?
   Application client id          : <client-id>
   Application client secret      : 

@@ -51,5 +51,13 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
           .to(GitHubOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(
+        pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(BitbucketOAuthService.CONFIG_SUFFIX))
+          .to(BitbucketOAuthService.class);
+    }
   }
 }
