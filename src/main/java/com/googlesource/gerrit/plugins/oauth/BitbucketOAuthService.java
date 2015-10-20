@@ -14,6 +14,21 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.server.OutputFormat.JSON;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import java.io.IOException;
+
+import org.scribe.builder.ServiceBuilder;
+import org.scribe.model.OAuthRequest;
+import org.scribe.model.Response;
+import org.scribe.model.Token;
+import org.scribe.model.Verb;
+import org.scribe.model.Verifier;
+import org.scribe.oauth.OAuthService;
+import org.slf4j.Logger;
+
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
@@ -27,37 +42,28 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.*;
-import org.scribe.oauth.OAuthService;
-import org.slf4j.Logger;
-
-import java.io.IOException;
-
-import static com.google.gerrit.server.OutputFormat.JSON;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.slf4j.LoggerFactory.getLogger;
 
 public class BitbucketOAuthService implements OAuthServiceProvider {
   private static final Logger log = getLogger(BitbucketOAuthService.class);
   static final String CONFIG_SUFFIX = "-bitbucket-oauth";
-  private static final String PROTECTED_RESOURCE_URL = "https://bitbucket.org/api/1.0/user/";
+  private static final String PROTECTED_RESOURCE_URL =
+      "https://bitbucket.org/api/1.0/user/";
   private final OAuthService service;
 
   @Inject
   BitbucketOAuthService(PluginConfigFactory cfgFactory,
-                        @PluginName String pluginName,
-                        @CanonicalWebUrl Provider<String> urlProvider) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+      @PluginName String pluginName,
+      @CanonicalWebUrl Provider<String> urlProvider) {
+    PluginConfig cfg =
+        cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
 
-    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
+    String canonicalWebUrl =
+        CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
 
-    service = new ServiceBuilder()
-            .provider(BitbucketApi.class)
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-            .callback(canonicalWebUrl + "oauth")
-            .build();
+    service = new ServiceBuilder().provider(BitbucketApi.class)
+        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+        .callback(canonicalWebUrl + "oauth").build();
   }
 
   @Override
@@ -68,9 +74,10 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
     Response response = request.send();
     if (response.getCode() != SC_OK) {
       throw new IOException(String.format("Status %s (%s) for request %s",
-              response.getCode(), response.getBody(), request.getUrl()));
+          response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+    JsonElement userJson =
+        JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
@@ -84,16 +91,13 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
       String username = usernameElement.getAsString();
 
       JsonElement displayName = jsonObject.get("display_name");
-      return new OAuthUserInfo(
-              username,
-              username,
-              null,
-              displayName == null || displayName.isJsonNull() ? null : displayName.getAsString(),
-              null
-      );
+      return new OAuthUserInfo(username, username, null,
+          displayName == null || displayName.isJsonNull() ? null
+              : displayName.getAsString(),
+          null);
     } else {
-      throw new IOException(String.format(
-              "Invalid JSON '%s': not a JSON Object", userJson));
+      throw new IOException(
+          String.format("Invalid JSON '%s': not a JSON Object", userJson));
     }
   }
 

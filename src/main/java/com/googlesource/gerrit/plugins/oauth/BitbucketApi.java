@@ -14,25 +14,33 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import com.google.common.io.BaseEncoding;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.exceptions.OAuthException;
-import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.model.*;
-import org.scribe.oauth.OAuthService;
-
 import static com.google.gerrit.server.OutputFormat.JSON;
 import static java.lang.String.format;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
 import static org.scribe.model.OAuthConstants.CODE;
 
+import org.scribe.builder.api.DefaultApi20;
+import org.scribe.exceptions.OAuthException;
+import org.scribe.extractors.AccessTokenExtractor;
+import org.scribe.model.OAuthConfig;
+import org.scribe.model.OAuthRequest;
+import org.scribe.model.Response;
+import org.scribe.model.Token;
+import org.scribe.model.Verb;
+import org.scribe.model.Verifier;
+import org.scribe.oauth.OAuthService;
+
+import com.google.common.io.BaseEncoding;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class BitbucketApi extends DefaultApi20 {
 
-  private static final String AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code";
-  private static final String ACCESS_TOKEN_ENDPOINT = "https://bitbucket.org/site/oauth2/access_token";
+  private static final String AUTHORIZE_URL =
+      "https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code";
+  private static final String ACCESS_TOKEN_ENDPOINT =
+      "https://bitbucket.org/site/oauth2/access_token";
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
@@ -75,8 +83,13 @@ public class BitbucketApi extends DefaultApi20 {
 
     @Override
     public Token getAccessToken(Token token, Verifier verifier) {
-      OAuthRequest request = new OAuthRequest(api.getAccessTokenVerb(), api.getAccessTokenEndpoint());
-      request.addHeader("Authorization", "Basic " + BaseEncoding.base64().encode(String.format("%s:%s", config.getApiKey(), config.getApiSecret()).getBytes()));
+      OAuthRequest request = new OAuthRequest(api.getAccessTokenVerb(),
+          api.getAccessTokenEndpoint());
+      request.addHeader("Authorization",
+          "Basic " + BaseEncoding.base64()
+              .encode(String
+                  .format("%s:%s", config.getApiKey(), config.getApiSecret())
+                  .getBytes()));
       request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
       request.addBodyParameter(CODE, verifier.getValue());
       Response response = request.send();
@@ -84,14 +97,16 @@ public class BitbucketApi extends DefaultApi20 {
         Token t = api.getAccessTokenExtractor().extract(response.getBody());
         return new Token(t.getToken(), config.getApiSecret());
       } else {
-        throw new OAuthException(String.format("Error response received: %s, HTTP status: %s", response.getBody(), response.getCode()));
+        throw new OAuthException(
+            String.format("Error response received: %s, HTTP status: %s",
+                response.getBody(), response.getCode()));
       }
     }
 
     @Override
     public Token getRequestToken() {
       throw new UnsupportedOperationException(
-              "Unsupported operation, please use 'getAuthorizationUrl' and redirect your users there");
+          "Unsupported operation, please use 'getAuthorizationUrl' and redirect your users there");
     }
 
     @Override
@@ -110,7 +125,8 @@ public class BitbucketApi extends DefaultApi20 {
     }
   }
 
-  private static final class BitbucketTokenExtractor implements AccessTokenExtractor {
+  private static final class BitbucketTokenExtractor
+      implements AccessTokenExtractor {
 
     @Override
     public Token extract(String response) {
@@ -119,12 +135,14 @@ public class BitbucketApi extends DefaultApi20 {
         JsonObject jsonObject = json.getAsJsonObject();
         JsonElement id = jsonObject.get(ACCESS_TOKEN);
         if (id == null || id.isJsonNull()) {
-          throw new OAuthException("Response doesn't contain 'access_token' field");
+          throw new OAuthException(
+              "Response doesn't contain 'access_token' field");
         }
         JsonElement accessToken = jsonObject.get(ACCESS_TOKEN);
         return new Token(accessToken.getAsString(), "");
       } else {
-        throw new OAuthException(String.format("Invalid JSON '%s': not a JSON Object", json));
+        throw new OAuthException(
+            String.format("Invalid JSON '%s': not a JSON Object", json));
       }
     }
   }
