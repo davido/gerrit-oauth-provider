@@ -14,6 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+
 import com.google.common.io.BaseEncoding;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -28,6 +29,10 @@ import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static com.google.gerrit.server.OutputFormat.JSON;
 import static java.lang.String.format;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
@@ -35,6 +40,7 @@ import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
 import static org.scribe.model.OAuthConstants.CODE;
 
 public class GitLabApi extends DefaultApi20 {
+
 
     private static final String AUTHORIZE_URL =
             "http://de.isrv.us/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s";
@@ -70,6 +76,9 @@ public class GitLabApi extends DefaultApi20 {
     }
 
     private static final class GitLabOAuthService implements OAuthService {
+
+        private static final Logger log =
+                LoggerFactory.getLogger(GitLabOAuthService.class);
         private static final String VERSION = "2.0";
 
         private static final String GRANT_TYPE = "grant_type";
@@ -83,15 +92,22 @@ public class GitLabApi extends DefaultApi20 {
             this.api = api;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
-        public Token getAccessToken(Token token, Verifier verifier) {
-            OAuthRequest request = new OAuthRequest(api.getAccessTokenVerb(),
-                    api.getAccessTokenEndpoint());
-            request.addHeader("Authorization", prepareAuthorizationHeaderValue());
-            request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
-            request.addBodyParameter(CODE, verifier.getValue());
+        public Token getAccessToken(Token requestToken, Verifier verifier) {
+            OAuthRequest request =
+                    new OAuthRequest(api.getAccessTokenVerb(),
+                            api.getAccessTokenEndpoint());
+            request.addBodyParameter("client_id", config.getApiKey());
+            request.addBodyParameter("client_secret", config.getApiSecret());
+            request.addBodyParameter("code", verifier.getValue());
+            request.addBodyParameter("redirect_uri", config.getCallback());
+            request.addBodyParameter("grant_type", "authorization_code");
             Response response = request.send();
-            if (response.getCode() == SC_OK) {
+            log.debug(response.getBody());
+            if (response.getCode() == 200) {
                 Token t = api.getAccessTokenExtractor().extract(response.getBody());
                 return new Token(t.getToken(), config.getApiSecret());
             } else {

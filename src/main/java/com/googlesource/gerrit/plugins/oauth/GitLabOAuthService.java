@@ -85,14 +85,13 @@ public class GitLabOAuthService implements OAuthServiceProvider {
         }
         if (userJson.isJsonObject()) {
             JsonObject jsonObject = userJson.getAsJsonObject();
-            JsonObject userObject = jsonObject.getAsJsonObject("user");
-            if (userObject == null || userObject.isJsonNull()) {
-                throw new IOException("Response doesn't contain 'user' field");
+            if (jsonObject == null || jsonObject.isJsonNull()) {
+                throw new IOException("Response doesn't contain 'user' field" + jsonObject);
             }
-            JsonElement usernameElement = userObject.get("username");
+            JsonElement usernameElement = jsonObject.get("username");
             String username = usernameElement.getAsString();
 
-            JsonElement displayName = jsonObject.get("display_name");
+            JsonElement displayName = jsonObject.get("name");
             return new OAuthUserInfo(username, username, null,
                     displayName == null || displayName.isJsonNull() ? null
                             : displayName.getAsString(),
