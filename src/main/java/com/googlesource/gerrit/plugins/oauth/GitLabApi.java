@@ -90,8 +90,7 @@ public class GitLabApi extends DefaultApi20 {
             request.addHeader("Authorization", prepareAuthorizationHeaderValue());
             request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
             request.addBodyParameter(CODE, verifier.getValue());
-            request.addBodyParameter(OAuthConstants.REDIRECT_URI,
-                    config.getCallback());
+            request.addBodyParameter(REDIRECT_URI, config.getCallback());
             Response response = request.send();
             if (response.getCode() == SC_OK) {
                 Token t = api.getAccessTokenExtractor().extract(response.getBody());
