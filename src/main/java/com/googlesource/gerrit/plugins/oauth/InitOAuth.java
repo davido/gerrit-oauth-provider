@@ -33,6 +33,7 @@ class InitOAuth implements InitStep {
   private final Section googleOAuthProviderSection;
   private final Section githubOAuthProviderSection;
   private final Section bitbucketOAuthProviderSection;
+  private final Section gitlabOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
@@ -44,7 +45,9 @@ class InitOAuth implements InitStep {
     this.githubOAuthProviderSection = sections.get(
         PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
     this.bitbucketOAuthProviderSection = sections.get(
-        PLUGIN_SECTION, pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+            PLUGIN_SECTION, pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+    this.gitlabOAuthProviderSection = sections.get(
+            PLUGIN_SECTION, pluginName + GitLabOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -70,6 +73,12 @@ class InitOAuth implements InitStep {
         true, "Use Bitbucket OAuth provider for Gerrit login ?");
     if (configureBitbucketOAuthProvider) {
       configureOAuth(bitbucketOAuthProviderSection);
+    }
+
+    boolean configureGitLabOAuthProvider = ui.yesno(
+            true, "Use GitLab OAuth provider for Gerrit login ?");
+    if (configureGitLabOAuthProvider) {
+      configureOAuth(gitlabOAuthProviderSection);
     }
   }
 
