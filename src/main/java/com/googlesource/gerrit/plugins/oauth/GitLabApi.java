@@ -37,7 +37,7 @@ import static org.scribe.model.OAuthConstants.CODE;
 public class GitLabApi extends DefaultApi20 {
 
     private static final String AUTHORIZE_URL =
-            "http://de.isrv.us/oauth/authorize?client_id=%s&response_type=code";
+            "http://de.isrv.us/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s";
     private static final String ACCESS_TOKEN_ENDPOINT =
             "http://de.isrv.us/oauth/token";
 
@@ -46,7 +46,7 @@ public class GitLabApi extends DefaultApi20 {
 
     @Override
     public String getAuthorizationUrl(OAuthConfig config) {
-        return format(AUTHORIZE_URL, config.getApiKey());
+        return format(AUTHORIZE_URL, config.getApiKey(), config.getCallback());
     }
 
     @Override
@@ -74,7 +74,6 @@ public class GitLabApi extends DefaultApi20 {
 
         private static final String GRANT_TYPE = "grant_type";
         private static final String GRANT_TYPE_VALUE = "authorization_code";
-        private static final String REDIRECT_URI = "redirect_uri";
 
         private final DefaultApi20 api;
         private final OAuthConfig config;
@@ -91,7 +90,6 @@ public class GitLabApi extends DefaultApi20 {
             request.addHeader("Authorization", prepareAuthorizationHeaderValue());
             request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
             request.addBodyParameter(CODE, verifier.getValue());
-            request.addBodyParameter(REDIRECT_URI, config.getCallback());
             Response response = request.send();
             if (response.getCode() == SC_OK) {
                 Token t = api.getAccessTokenExtractor().extract(response.getBody());
