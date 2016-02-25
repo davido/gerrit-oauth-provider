@@ -74,6 +74,7 @@ public class GitLabApi extends DefaultApi20 {
 
         private static final String GRANT_TYPE = "grant_type";
         private static final String GRANT_TYPE_VALUE = "authorization_code";
+        private static final String REDIRECT_URI = "redirect_uri";
 
         private final DefaultApi20 api;
         private final OAuthConfig config;
