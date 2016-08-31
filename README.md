@@ -29,6 +29,13 @@ and run the following:
   cd gerrit-oauth-provider && buck build plugin
 ```
 
+**Note for Ubuntu users**: 
+Ubuntu default build does not come with ```zip``` command installed in it. Run ```zip``` command on the command line to check it's existance.
+If it is absent, install it using the below command before running the build
+```
+sudo apt-get install zip
+```
+
 Install
 -------
 
