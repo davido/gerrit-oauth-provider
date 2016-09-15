@@ -17,8 +17,6 @@ gerrit_plugin(
     ':scribe'
   ],
   provided_deps = [
-    '//lib:guava',
-    '//lib:gson',
     '//lib/commons:codec',
   ],
 )
