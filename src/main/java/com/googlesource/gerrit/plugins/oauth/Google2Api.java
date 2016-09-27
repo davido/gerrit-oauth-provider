@@ -41,7 +41,7 @@ public class Google2Api extends DefaultApi20 {
 
   @Override
   public String getAccessTokenEndpoint() {
-    return "https://accounts.google.com/o/oauth2/token?grant_type=authorization_code";
+    return "https://accounts.google.com/o/oauth2/token";
   }
 
   @Override
