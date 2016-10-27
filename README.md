@@ -10,6 +10,7 @@ Supported OAuth providers:
 * Bitbucket
 * GitHub
 * Google
+* [CAS](https://www.apereo.org/projects/cas)
 
 See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
 

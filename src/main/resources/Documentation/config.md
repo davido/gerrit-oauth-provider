@@ -9,8 +9,8 @@ file. `auth.type` must be set to `OAUTH`:
   type = OAUTH
 ```
 
-Google and GitHub specific providers are configured under @PLUGIN@ section,
-appended with provider suffix: `-google-oauth` and `-github-oauth`:
+Providers are configured under @PLUGIN@ section,
+appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
 
 ```
   [plugin "@PLUGIN@-google-oauth"]
@@ -21,10 +21,15 @@ appended with provider suffix: `-google-oauth` and `-github-oauth`:
   [plugin "@PLUGIN@-github-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-cas-oauth"]
+    root-url = "<cas url>"
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
-The login form with provider selection isn’t shown. When both
+The login form with provider selection isn’t shown. When all
 sections are omitted, Gerrit will not start.
 
 Google OAuth provider seamlessly supports linking of OAuth identity
@@ -63,6 +68,25 @@ to the hosted domain). If the hd claim wasn't included in ID token or didn't mat
 provided `domain` configuration option the authentication is rejected. Note: Because of
 current limitation of the OAuth extension point in gerrit (blame /me for that) the user
 would only see "Unauthorized" message.
+
+### CAS OAuth
+
+For CAS OAuth setting
+
+```
+plugin.gerrit-oauth-provider-cas-oauth.root-url = "https://example.com/cas"
+```
+
+is required, since CAS is a self-hosted application.
+
+The plugin expects CAS to make several attributes available to it:
+
+| Name | Description | Required |
+|---|---|---|
+| id | External ID | yes |
+| login | Login name | no |
+| email |  Email address | no |
+| name | Display name | no |
 
 ## Obtaining provider authorizations
 
@@ -114,3 +138,12 @@ After application is registered, the page will show generated client id and
 secret.
 
 ![Generated client id and secret](images/github-2.png)
+
+### CAS
+
+The client-id and client-secret for CAS OAuth are part of the CAS
+service definition and need to be set manually.
+
+See
+[the CAS documentation](https://apereo.github.io/cas/4.2.x/installation/OAuth-OpenId-Authentication.html#add-oauth-clients)
+for an example.
