@@ -28,11 +28,13 @@ class InitOAuth implements InitStep {
   static final String DOMAIN = "domain";
   static final String USE_EMAIL_AS_USERNAME =
       "use-email-as-username";
+  static final String ROOT_URL = "root-url";
 
   private final ConsoleUI ui;
   private final Section googleOAuthProviderSection;
   private final Section githubOAuthProviderSection;
   private final Section bitbucketOAuthProviderSection;
+  private final Section casOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
@@ -45,6 +47,8 @@ class InitOAuth implements InitStep {
         PLUGIN_SECTION, pluginName + GitHubOAuthService.CONFIG_SUFFIX);
     this.bitbucketOAuthProviderSection = sections.get(
         PLUGIN_SECTION, pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+    this.casOAuthProviderSection = sections.get(
+        PLUGIN_SECTION, pluginName + CasOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -70,6 +74,13 @@ class InitOAuth implements InitStep {
         true, "Use Bitbucket OAuth provider for Gerrit login ?");
     if (configureBitbucketOAuthProvider) {
       configureOAuth(bitbucketOAuthProviderSection);
+    }
+
+    boolean configureCasOAuthProvider = ui.yesno(
+        true, "Use CAS OAuth provider for Gerrit login ?");
+    if (configureCasOAuthProvider) {
+      casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
+      configureOAuth(casOAuthProviderSection);
     }
   }
 

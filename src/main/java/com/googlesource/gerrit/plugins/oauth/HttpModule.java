@@ -59,5 +59,13 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(BitbucketOAuthService.CONFIG_SUFFIX))
           .to(BitbucketOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(
+        pluginName + CasOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(CasOAuthService.CONFIG_SUFFIX))
+          .to(CasOAuthService.class);
+    }
   }
 }
