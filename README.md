@@ -7,10 +7,10 @@ Gerrit OAuth2 authentication provider
 With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
 
-* Bitbucket
-* GitHub
-* Google
+* [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
+* [GitHub](https://developer.github.com/v3/oauth/)
+* [Google](https://developers.google.com/identity/protocols/OAuth2)
 
 See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
 
