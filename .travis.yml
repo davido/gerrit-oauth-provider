@@ -13,26 +13,43 @@
 # limitations under the License.
 #
 
+dist: trusty
+sudo: required
 language: java
-sudo: false
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-jdk: oraclejdk8
 
-install:
-  - cd ..
-  - mkdir -p build
-  - cd build
-  - git clone https://github.com/facebook/buck
-  - cd buck
-  - ant
-  - export PATH=$PATH:$TRAVIS_BUILD_DIR/../build/buck/bin
-  - cd $TRAVIS_BUILD_DIR
+matrix:
+  include:
+    - os: linux
+      jdk: oraclejdk8
+    - os: osx
+      osx_image: xcode8
+
+install: true
+
+before_install:
+  - OS=linux
+  - ARCH=x86_64
+  - V=0.4.0
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then OS=darwin; fi
+  - GH_BASE="https://github.com/bazelbuild/bazel/releases/download/$V"
+  - GH_ARTIFACT="bazel-$V-installer-$OS-$ARCH.sh"
+  - URL="$GH_BASE/$GH_ARTIFACT"
+  - echo $URL
+  - wget -O install.sh $URL
+  - chmod +x install.sh
+  - ./install.sh --user
+  - rm -f install.sh
 
 script:
-  - buck build plugin > buck.log
+  - |
+    bazel \
+      --output_base=$HOME/.cache/bazel \
+      --batch \
+      --host_jvm_args=-Xmx500m \
+      --host_jvm_args=-Xms500m \
+      build \
+      --verbose_failures \
+      :all
 
-after_failure:
-  - cat buck.log
+notifications:
+  email: false

@@ -1,41 +1,18 @@
 Build
 =====
 
-This plugin is built with Buck.
-
-Two build modes are supported: Standalone and in Gerrit tree.
-The standalone build mode is recommended, as this mode doesn't require
-the Gerrit tree to exist locally.
-
-Build in Standalone mode
-------------------------
+This plugin is built with Bazel.
 
 ```
-  git clone --recursive https://github.com/davido/gerrit-oauth-provider
-  cd gerrit-oauth-provider
-  buck build plugin
+  git clone https://gerrit.googlesource.com/plugins/oauth
+  cd oauth
+  bazel build :all
 ```
 
 The output is created in
 
 ```
-  buck-out/gen/@PLUGIN@.jar
-```
-
-Build in Gerrit tree
---------------------
-
-Clone or link this plugin to the plugins directory of Gerrit's source
-tree, and issue the command:
-
-```
-  buck build plugins/gerrit-oauth-provider
-```
-
-The output is created in
-
-```
-  buck-out/gen/plugins/@PLUGIN@/@PLUGIN@.jar
+  bazel-genfiles/@PLUGIN@.jar
 ```
 
 This project can be imported into the Eclipse IDE:

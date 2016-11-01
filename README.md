@@ -22,18 +22,28 @@ Prebuilt binary artifacts are available on [release page](https://github.com/dav
 Build
 -----
 
-To build the plugin, install [Buck](http://facebook.github.io/buck/setup/install.html)
-and run the following:
+The plugin can be bulit with Buck and Bazel. To build the plugin with Buck,
+install [Buck](http://facebook.github.io/buck/setup/install.html) and run
+the following:
 
 ```
   git clone --recursive https://github.com/davido/gerrit-oauth-provider.git
   cd gerrit-oauth-provider && buck build plugin
 ```
 
+To build the plugin with Bazel, install
+[Bazel](https://bazel.build/versions/master/docs/install.html) and run the
+following:
+
+```
+  bazel build gerrit-oauth-provider
+```
+
 Install
 -------
 
-Copy the `buck-out/gen/gerrit-oauth-provider.jar` to
+Copy the `buck-out/gen/gerrit-oauth-provider.jar` wenn built with Buck or
+`bazel-genfiles/gerrit-oauth-provider.jar` wenn built with Bazel to
 `$gerit_site/plugins` and re-run init to configure it:
 
 ```
