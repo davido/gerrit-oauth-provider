@@ -1,9 +1,0 @@
-include_defs('//bucklets/maven_jar.bucklet')
-
-maven_jar(
-  name = 'codec',
-  id = 'commons-codec:commons-codec:1.4',
-  sha1 = '4216af16d38465bbab0f3dff8efa14204f7a399a',
-  license = 'Apache2.0',
-  exclude = ['META-INF/LICENSE.txt', 'META-INF/NOTICE.txt'],
-)
