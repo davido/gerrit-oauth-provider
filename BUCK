@@ -3,11 +3,11 @@ include_defs('//bucklets/maven_jar.bucklet')
 define_license('scribe')
 
 gerrit_plugin(
-  name = 'gerrit-oauth-provider',
+  name = 'oauth',
   srcs = glob(['src/main/java/**/*.java']),
   resources = glob(['src/main/resources/**/*']),
   manifest_entries = [
-    'Gerrit-PluginName: gerrit-oauth-provider',
+    'Gerrit-PluginName: oauth',
     'Gerrit-HttpModule: com.googlesource.gerrit.plugins.oauth.HttpModule',
     'Gerrit-InitStep: com.googlesource.gerrit.plugins.oauth.InitOAuth',
     'Implementation-Title: Gerrit OAuth authentication provider',
@@ -25,7 +25,7 @@ gerrit_plugin(
 
 java_library(
   name = 'classpath',
-  deps = [':gerrit-oauth-provider__plugin'],
+  deps = [':oauth__plugin'],
 )
 
 maven_jar(

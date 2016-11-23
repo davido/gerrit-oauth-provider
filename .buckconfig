@@ -1,6 +1,6 @@
 [alias]
-  gerrit-oauth-provider = //:gerrit-oauth-provider
-  plugin = //:gerrit-oauth-provider
+  oauth = //:oauth
+  plugin = //:oauth
 
 [java]
   src_roots = java, resources
