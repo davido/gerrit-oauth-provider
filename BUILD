@@ -12,7 +12,7 @@ gerrit_plugin(
     ],
     resources = glob(["src/main/resources/**/*"]),
     deps = [
-        "//external:commons-codec-neverlink",
-        "//external:scribe",
+        "@commons_codec//jar:neverlink",
+        "@scribe//jar",
     ],
 )
