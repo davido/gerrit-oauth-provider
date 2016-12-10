@@ -1,2 +1,2 @@
-load("@com_github_davido_bazlets//:gerrit_plugin.bzl",
+load("@com_googlesource_gerrit_bazlets//:gerrit_plugin.bzl",
      "gerrit_plugin")
