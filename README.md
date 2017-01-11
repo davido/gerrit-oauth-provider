@@ -10,7 +10,9 @@ Supported OAuth providers:
 * [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
 * [GitHub](https://developer.github.com/v3/oauth/)
+* [GitLab](https://about.gitlab.com/)
 * [Google](https://developers.google.com/identity/protocols/OAuth2)
+
 
 See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
 

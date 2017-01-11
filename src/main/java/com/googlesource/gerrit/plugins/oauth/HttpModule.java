@@ -53,7 +53,7 @@ class HttpModule extends HttpPluginModule {
     }
 
     cfg = cfgFactory.getFromGerritConfig(
-        pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
+       pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
     if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
           .annotatedWith(Exports.named(BitbucketOAuthService.CONFIG_SUFFIX))
@@ -61,11 +61,19 @@ class HttpModule extends HttpPluginModule {
     }
 
     cfg = cfgFactory.getFromGerritConfig(
-        pluginName + CasOAuthService.CONFIG_SUFFIX);
+       pluginName + CasOAuthService.CONFIG_SUFFIX);
     if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
           .annotatedWith(Exports.named(CasOAuthService.CONFIG_SUFFIX))
           .to(CasOAuthService.class);
+    }
+
+    cfg = cfgFactory.getFromGerritConfig(
+       pluginName + GitLabOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(GitLabOAuthService.CONFIG_SUFFIX))
+          .to(GitLabOAuthService.class);
     }
   }
 }
