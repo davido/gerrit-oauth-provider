@@ -35,6 +35,7 @@ class InitOAuth implements InitStep {
   private final Section githubOAuthProviderSection;
   private final Section bitbucketOAuthProviderSection;
   private final Section casOAuthProviderSection;
+  private final Section facebookOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui,
@@ -49,6 +50,8 @@ class InitOAuth implements InitStep {
         PLUGIN_SECTION, pluginName + BitbucketOAuthService.CONFIG_SUFFIX);
     this.casOAuthProviderSection = sections.get(
         PLUGIN_SECTION, pluginName + CasOAuthService.CONFIG_SUFFIX);
+    this.facebookOAuthProviderSection = sections.get(
+        PLUGIN_SECTION, pluginName + FacebookOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -81,6 +84,12 @@ class InitOAuth implements InitStep {
     if (configureCasOAuthProvider) {
       casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
       configureOAuth(casOAuthProviderSection);
+    }
+
+    boolean configueFacebookOAuthProvider = ui.yesno(true,
+            "Use Facebook OAuth provider for Gerrit login ?");
+    if (configueFacebookOAuthProvider) {
+        configureOAuth(facebookOAuthProviderSection);
     }
   }
 
