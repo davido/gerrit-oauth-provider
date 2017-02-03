@@ -94,11 +94,11 @@ public class BitbucketApi extends DefaultApi20 {
       if (response.getCode() == SC_OK) {
         Token t = api.getAccessTokenExtractor().extract(response.getBody());
         return new Token(t.getToken(), config.getApiSecret());
-      } else {
-        throw new OAuthException(
-            String.format("Error response received: %s, HTTP status: %s",
-                response.getBody(), response.getCode()));
       }
+
+      throw new OAuthException(
+          String.format("Error response received: %s, HTTP status: %s",
+              response.getBody(), response.getCode()));
     }
 
     private String prepareAuthorizationHeaderValue() {
@@ -144,10 +144,10 @@ public class BitbucketApi extends DefaultApi20 {
         }
         JsonElement accessToken = jsonObject.get(ACCESS_TOKEN);
         return new Token(accessToken.getAsString(), "");
-      } else {
-        throw new OAuthException(
-            String.format("Invalid JSON '%s': not a JSON Object", json));
       }
+
+      throw new OAuthException(
+          String.format("Invalid JSON '%s': not a JSON Object", json));
     }
   }
 }

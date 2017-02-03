@@ -136,8 +136,7 @@ class CasOAuthService implements OAuthServiceProvider {
     return new OAuthUserInfo(id.getAsString(), login, email, name, null);
   }
 
-  private String getStringElement(JsonObject o, String name)
-      throws IOException {
+  private String getStringElement(JsonObject o, String name) {
     JsonElement elem = o.get(name);
     if (elem == null || elem.isJsonNull())
       return null;

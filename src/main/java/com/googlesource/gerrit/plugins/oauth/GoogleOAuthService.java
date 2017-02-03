@@ -151,10 +151,10 @@ class GoogleOAuthService implements OAuthServiceProvider {
           email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
           name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
 	      claimedIdentifier /*claimedIdentity*/);
-    } else {
-        throw new IOException(String.format(
-            "Invalid JSON '%s': not a JSON Object", userJson));
     }
+
+    throw new IOException(String.format(
+        "Invalid JSON '%s': not a JSON Object", userJson));
   }
 
   private JsonObject retrieveJWTToken(OAuthToken token) {

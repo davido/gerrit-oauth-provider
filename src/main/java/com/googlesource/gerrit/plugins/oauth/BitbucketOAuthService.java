@@ -97,10 +97,10 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
           displayName == null || displayName.isJsonNull() ? null
               : displayName.getAsString(),
           null);
-    } else {
-      throw new IOException(
-          String.format("Invalid JSON '%s': not a JSON Object", userJson));
     }
+
+    throw new IOException(
+        String.format("Invalid JSON '%s': not a JSON Object", userJson));
   }
 
   @Override
