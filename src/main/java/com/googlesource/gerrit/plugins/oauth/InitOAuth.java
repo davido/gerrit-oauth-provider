@@ -59,9 +59,6 @@ class InitOAuth implements InitStep {
         true, "Use Google OAuth provider for Gerrit login ?");
     if (configureGoogleOAuthProvider) {
       configureOAuth(googleOAuthProviderSection);
-      googleOAuthProviderSection.string(
-          "Link to OpenID accounts?",
-          LINK_TO_EXISTING_OPENID_ACCOUNT, "true");
     }
 
     boolean configueGitHubOAuthProvider = ui.yesno(
