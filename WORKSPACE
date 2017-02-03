@@ -3,8 +3,8 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "3bec81727c69207e591ae1761d5a78d8ec418a0b",
-#    local_path = "/home/davido/projects/bazlets",
+    commit = "0f87babe07a555425d829c6e7951e296e9e24579",
+    #    local_path = "/home/<user>/projects/bazlets",
 )
 
 # Release Plugin API
