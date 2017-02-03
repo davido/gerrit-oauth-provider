@@ -61,7 +61,6 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private static final String SCOPE = "email profile";
   private final OAuthService service;
   private final String canonicalWebUrl;
-  private final boolean linkToExistingOpenIDAccounts;
   private final String domain;
   private final boolean useEmailAsUsername;
 
@@ -73,26 +72,23 @@ class GoogleOAuthService implements OAuthServiceProvider {
         pluginName + CONFIG_SUFFIX);
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
         urlProvider.get()) + "/";
-    this.linkToExistingOpenIDAccounts = cfg.getBoolean(
-        InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false);
+    if (cfg.getBoolean(InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false)) {
+      log.warn(String.format("The support for: %s is disconinued",
+          InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
+    }
     this.domain = cfg.getString(InitOAuth.DOMAIN);
     this.useEmailAsUsername = cfg.getBoolean(
         InitOAuth.USE_EMAIL_AS_USERNAME, false);
-    String scope = linkToExistingOpenIDAccounts
-        ? "openid " + SCOPE
-        : SCOPE;
     this.service = new ServiceBuilder()
         .provider(Google2Api.class)
         .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
         .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
         .callback(canonicalWebUrl + "oauth")
-        .scope(scope)
+        .scope(SCOPE)
         .build();
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
-      log.debug("OAuth2: scope={}", scope);
-      log.debug("OAuth2: linkToExistingOpenIDAccounts={}",
-          linkToExistingOpenIDAccounts);
+      log.debug("OAuth2: scope={}", SCOPE);
       log.debug("OAuth2: domain={}", domain);
       log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
@@ -124,15 +120,10 @@ class GoogleOAuthService implements OAuthServiceProvider {
       }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
-      String claimedIdentifier = null;
       String login = null;
 
-      if (linkToExistingOpenIDAccounts
-          || !Strings.isNullOrEmpty(domain)) {
+      if (!Strings.isNullOrEmpty(domain)) {
         JsonObject jwtToken = retrieveJWTToken(token);
-        if (linkToExistingOpenIDAccounts) {
-          claimedIdentifier = retrieveClaimedIdentity(jwtToken);
-        }
         if (!Strings.isNullOrEmpty(domain)) {
           String hdClaim = retrieveHostedDomain(jwtToken);
           if (!domain.equalsIgnoreCase(hdClaim)) {
@@ -150,7 +141,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
           login /*username*/,
           email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
           name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
-	      claimedIdentifier /*claimedIdentity*/);
+	      null /*claimedIdentity*/);
     }
 
     throw new IOException(String.format(
@@ -174,17 +165,6 @@ class GoogleOAuthService implements OAuthServiceProvider {
         }
       }
     }
-    return null;
-  }
-
-  private static String retrieveClaimedIdentity(JsonObject jwtToken) {
-    JsonElement openidIdElement = jwtToken.get("openid_id");
-    if (openidIdElement != null && !openidIdElement.isJsonNull()) {
-      String openIdId = openidIdElement.getAsString();
-      log.debug("OAuth2: openid_id={}", openIdId);
-      return openIdId;
-    }
-    log.debug("OAuth2: JWT doesn't contain openid_id element");
     return null;
   }
 
@@ -228,10 +208,6 @@ class GoogleOAuthService implements OAuthServiceProvider {
   public String getAuthorizationUrl() {
     String url = service.getAuthorizationUrl(null);
     try {
-      if (linkToExistingOpenIDAccounts) {
-        url += "&openid.realm=" + URLEncoder.encode(canonicalWebUrl,
-            StandardCharsets.UTF_8.name());
-      }
       if (!Strings.isNullOrEmpty(domain)) {
         url += "&hd=" + URLEncoder.encode(domain,
             StandardCharsets.UTF_8.name());
