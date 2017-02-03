@@ -159,10 +159,10 @@ public class Google2Api extends DefaultApi20 {
       Matcher matcher = accessTokenPattern.matcher(response);
       if (matcher.find()) {
         return new Token(matcher.group(1), "", response);
-      } else {
-        throw new OAuthException(
-            "Cannot extract an acces token. Response was: " + response);
       }
+
+      throw new OAuthException(
+          "Cannot extract an acces token. Response was: " + response);
     }
   }
 }
