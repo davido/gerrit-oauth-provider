@@ -55,6 +55,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private static final Logger log =
       LoggerFactory.getLogger(GoogleOAuthService.class);
   static final String CONFIG_SUFFIX = "-google-oauth";
+  private static final String GOOGLE_PROVIDER_PREFIX = "google-oauth:";
   private static final String PROTECTED_RESOURCE_URL =
       "https://www.googleapis.com/userinfo/v2/me";
       //"https://www.googleapis.com/plus/v1/people/me/openIdConnect";
@@ -63,6 +64,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private final String canonicalWebUrl;
   private final String domain;
   private final boolean useEmailAsUsername;
+  private final boolean fixLegacyUserId;
 
   @Inject
   GoogleOAuthService(PluginConfigFactory cfgFactory,
@@ -76,6 +78,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       log.warn(String.format("The support for: %s is disconinued",
           InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
     }
+    fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     this.domain = cfg.getString(InitOAuth.DOMAIN);
     this.useEmailAsUsername = cfg.getBoolean(
         InitOAuth.USE_EMAIL_AS_USERNAME, false);
@@ -137,11 +140,12 @@ class GoogleOAuthService implements OAuthServiceProvider {
       if (useEmailAsUsername && !email.isJsonNull()) {
         login = email.getAsString().split("@")[0];
       }
-      return new OAuthUserInfo(id.getAsString() /*externalId*/,
+      return new OAuthUserInfo(
+          GOOGLE_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
           login /*username*/,
           email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
           name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
-	      null /*claimedIdentity*/);
+          fixLegacyUserId ? id.getAsString() : null /*claimedIdentity*/);
     }
 
     throw new IOException(String.format(

@@ -49,10 +49,12 @@ class GitHubOAuthService implements OAuthServiceProvider {
   private static final Logger log =
       LoggerFactory.getLogger(GitHubOAuthService.class);
   static final String CONFIG_SUFFIX = "-github-oauth";
+  private final static String GITHUB_PROVIDER_PREFIX = "github-oauth:";
   private static final String PROTECTED_RESOURCE_URL =
       "https://api.github.com/user";
 
   private static final String SCOPE = "user:email";
+  private final boolean fixLegacyUserId;
   private final OAuthService service;
 
   @Inject
@@ -63,6 +65,7 @@ class GitHubOAuthService implements OAuthServiceProvider {
         pluginName + CONFIG_SUFFIX);
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
         urlProvider.get()) + "/";
+    fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     service = new ServiceBuilder()
         .provider(GitHub2Api.class)
         .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
@@ -99,11 +102,12 @@ class GitHubOAuthService implements OAuthServiceProvider {
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
       JsonElement login = jsonObject.get("login");
-      return new OAuthUserInfo(id.getAsString(),
+      return new OAuthUserInfo(
+          GITHUB_PROVIDER_PREFIX + id.getAsString(),
           login == null || login.isJsonNull() ? null : login.getAsString(),
           email == null || email.isJsonNull() ? null : email.getAsString(),
           name == null || name.isJsonNull() ? null : name.getAsString(),
-          null);
+          fixLegacyUserId ? id.getAsString() : null);
     }
 
     throw new IOException(String.format(

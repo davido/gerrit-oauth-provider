@@ -47,8 +47,10 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class BitbucketOAuthService implements OAuthServiceProvider {
   private static final Logger log = getLogger(BitbucketOAuthService.class);
   static final String CONFIG_SUFFIX = "-bitbucket-oauth";
+  private final static String BITBUCKET_PROVIDER_PREFIX = "bitbucket-oauth:";
   private static final String PROTECTED_RESOURCE_URL =
       "https://bitbucket.org/api/1.0/user/";
+  private final boolean fixLegacyUserId;
   private final OAuthService service;
 
   @Inject
@@ -60,7 +62,7 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
 
     String canonicalWebUrl =
         CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
-
+    fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     service = new ServiceBuilder().provider(BitbucketApi.class)
         .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
         .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
@@ -93,10 +95,14 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
       String username = usernameElement.getAsString();
 
       JsonElement displayName = jsonObject.get("display_name");
-      return new OAuthUserInfo(username, username, null,
-          displayName == null || displayName.isJsonNull() ? null
+      return new OAuthUserInfo(
+          BITBUCKET_PROVIDER_PREFIX + username,
+          username,
+          null,
+          displayName == null || displayName.isJsonNull()
+              ? null
               : displayName.getAsString(),
-          null);
+          fixLegacyUserId ? username : null);
     }
 
     throw new IOException(
