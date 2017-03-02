@@ -5,6 +5,7 @@ gerrit_plugin(
     srcs = glob(["src/main/java/**/*.java"]),
     manifest_entries = [
         "Gerrit-PluginName: gerrit-oauth-provider",
+        "Gerrit-Module: com.googlesource.gerrit.plugins.oauth.Module",
         "Gerrit-HttpModule: com.googlesource.gerrit.plugins.oauth.HttpModule",
         "Gerrit-InitStep: com.googlesource.gerrit.plugins.oauth.InitOAuth",
         "Implementation-Title: Gerrit OAuth authentication provider",
