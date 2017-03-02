@@ -26,6 +26,11 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     root-url = "<cas url>"
     client-id = "<client-id>"
     client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-gitlab-oauth"]
+      root-url = "<gitlab url>"
+      client-id = "<client-id>"
+      client-secret = "<client-secret>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -147,3 +152,22 @@ service definition and need to be set manually.
 See
 [the CAS documentation](https://apereo.github.io/cas/4.2.x/installation/OAuth-OpenId-Authentication.html#add-oauth-clients)
 for an example.
+
+### GitLab
+
+To obtain client-id and client-secret for GitLab OAuth, go to
+Applications settings in your GitLab profile:
+
+- Select "Save application" and enter information about the
+  application.
+
+  Note that it is important that Redirect URI points to
+    `<canonical-web-uri-of-gerrit>/oauth`.
+
+  ![Save new application on GitLab](images/gitlab-1.png)
+
+
+After application is saved, the page will show generated client id and
+secret.
+
+![Generated client id and secret](images/gitlab-2.png)
