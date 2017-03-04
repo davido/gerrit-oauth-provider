@@ -67,5 +67,21 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(CasOAuthService.CONFIG_SUFFIX))
           .to(CasOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName
+        + FacebookOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class).annotatedWith(
+          Exports.named(FacebookOAuthService.CONFIG_SUFFIX)).to(
+          FacebookOAuthService.class);
+    }
+
+    cfg = cfgFactory.getFromGerritConfig(
+       pluginName + GitLabOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(GitLabOAuthService.CONFIG_SUFFIX))
+          .to(GitLabOAuthService.class);
+    }
   }
 }
