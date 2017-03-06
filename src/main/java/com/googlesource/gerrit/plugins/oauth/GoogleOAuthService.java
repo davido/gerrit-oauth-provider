@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -129,7 +131,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
         JsonObject jwtToken = retrieveJWTToken(token);
         if (!Strings.isNullOrEmpty(domain)) {
           String hdClaim = retrieveHostedDomain(jwtToken);
-          if (!domain.equalsIgnoreCase(hdClaim)) {
+          List<String> domainList = Arrays.asList(domain.split(","));
+          if (!domainList.contains(hdClaim)) {
             // TODO(davido): improve error reporting in OAuth extension point
             log.error("Error: hosted domain validation failed: {}",
                 Strings.nullToEmpty(hdClaim));
