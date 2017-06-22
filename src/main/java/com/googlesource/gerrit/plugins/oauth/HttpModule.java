@@ -46,7 +46,7 @@ class HttpModule extends HttpPluginModule {
 
     cfg = cfgFactory.getFromGerritConfig(
         pluginName + GitHubOAuthService.CONFIG_SUFFIX);
-    if (cfg.getString("client-id") != null) {
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
           .annotatedWith(Exports.named(GitHubOAuthService.CONFIG_SUFFIX))
           .to(GitHubOAuthService.class);
