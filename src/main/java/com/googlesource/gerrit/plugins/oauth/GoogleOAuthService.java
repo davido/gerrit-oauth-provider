@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -62,7 +64,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private static final String SCOPE = "email profile";
   private final OAuthService service;
   private final String canonicalWebUrl;
-  private final String domain;
+  private final List<String> domains;
   private final boolean useEmailAsUsername;
   private final boolean fixLegacyUserId;
 
@@ -79,7 +81,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
           InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
     }
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
-    this.domain = cfg.getString(InitOAuth.DOMAIN);
+    this.domains = Arrays.asList(cfg.getStringList(InitOAuth.DOMAIN));
     this.useEmailAsUsername = cfg.getBoolean(
         InitOAuth.USE_EMAIL_AS_USERNAME, false);
     this.service = new ServiceBuilder()
@@ -92,7 +94,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
-      log.debug("OAuth2: domain={}", domain);
+      log.debug("OAuth2: domains={}", domains);
       log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
   }
@@ -125,16 +127,21 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonElement name = jsonObject.get("name");
       String login = null;
 
-      if (!Strings.isNullOrEmpty(domain)) {
+      if (domains.size() > 0) {
+        boolean domainMatched = false;
         JsonObject jwtToken = retrieveJWTToken(token);
-        if (!Strings.isNullOrEmpty(domain)) {
-          String hdClaim = retrieveHostedDomain(jwtToken);
-          if (!domain.equalsIgnoreCase(hdClaim)) {
-            // TODO(davido): improve error reporting in OAuth extension point
-            log.error("Error: hosted domain validation failed: {}",
-                Strings.nullToEmpty(hdClaim));
-            return null;
+        String hdClaim = retrieveHostedDomain(jwtToken);
+        for (String domain : domains) {
+          if (domain.equalsIgnoreCase(hdClaim)) {
+            domainMatched = true;
+            break;
           }
+        }
+        if (!domainMatched) {
+          // TODO(davido): improve error reporting in OAuth extension point
+          log.error("Error: hosted domain validation failed: {}",
+              Strings.nullToEmpty(hdClaim));
+          return null;
         }
       }
       if (useEmailAsUsername && !email.isJsonNull()) {
@@ -212,9 +219,11 @@ class GoogleOAuthService implements OAuthServiceProvider {
   public String getAuthorizationUrl() {
     String url = service.getAuthorizationUrl(null);
     try {
-      if (!Strings.isNullOrEmpty(domain)) {
-        url += "&hd=" + URLEncoder.encode(domain,
+      if (domains.size() == 1) {
+        url += "&hd=" + URLEncoder.encode(domains.get(0),
             StandardCharsets.UTF_8.name());
+      } else if (domains.size() > 1) {
+        url += "&hd=*";
       }
     } catch (UnsupportedEncodingException e) {
       throw new IllegalArgumentException(e);
