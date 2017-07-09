@@ -17,15 +17,18 @@ package com.googlesource.gerrit.plugins.oauth;
 import org.scribe.builder.api.DefaultApi20;
 import org.scribe.exceptions.OAuthException;
 import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.model.*;
+import org.scribe.model.OAuthConfig;
+import org.scribe.model.OAuthConstants;
+import org.scribe.model.OAuthRequest;
+import org.scribe.model.Response;
+import org.scribe.model.Token;
+import org.scribe.model.Verb;
+import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
-
 import org.scribe.utils.Preconditions;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.lang.String.format;
 
 public class GitLabApi extends DefaultApi20 {
   private static final String AUTHORIZE_URL =
@@ -152,10 +155,9 @@ public class GitLabApi extends DefaultApi20 {
       Matcher matcher = accessTokenPattern.matcher(response);
       if (matcher.find()) {
         return new Token(matcher.group(1), "", response);
-      } else {
-        throw new OAuthException(
-            "Cannot extract an acces token. Response was: " + response);
       }
+      throw new OAuthException(
+          "Cannot extract an acces token. Response was: " + response);
     }
   }
 }
