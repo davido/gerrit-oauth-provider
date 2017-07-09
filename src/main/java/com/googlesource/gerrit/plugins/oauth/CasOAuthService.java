@@ -30,7 +30,8 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-
+import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
@@ -41,54 +42,48 @@ import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-import javax.servlet.http.HttpServletResponse;
-
 @Singleton
 class CasOAuthService implements OAuthServiceProvider {
-  private static final Logger log =
-      LoggerFactory.getLogger(CasOAuthService.class);
+  private static final Logger log = LoggerFactory.getLogger(CasOAuthService.class);
   static final String CONFIG_SUFFIX = "-cas-oauth";
-  private final static String CAS_PROVIDER_PREFIX = "cas-oauth:";
-  private static final String PROTECTED_RESOURCE_URL =
-      "%s/oauth2.0/profile";
+  private static final String CAS_PROVIDER_PREFIX = "cas-oauth:";
+  private static final String PROTECTED_RESOURCE_URL = "%s/oauth2.0/profile";
 
   private final String rootUrl;
   private final boolean fixLegacyUserId;
   private final OAuthService service;
 
   @Inject
-  CasOAuthService(PluginConfigFactory cfgFactory,
+  CasOAuthService(
+      PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(
-        pluginName + CONFIG_SUFFIX);
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
     rootUrl = cfg.getString(InitOAuth.ROOT_URL);
-    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
-        urlProvider.get()) + "/";
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
-    service = new ServiceBuilder()
-        .provider(new CasApi(rootUrl))
-        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-        .callback(canonicalWebUrl + "oauth")
-        .build();
+    service =
+        new ServiceBuilder()
+            .provider(new CasApi(rootUrl))
+            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+            .callback(canonicalWebUrl + "oauth")
+            .build();
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    final String protectedResourceUrl =
-        String.format(PROTECTED_RESOURCE_URL, rootUrl);
+    final String protectedResourceUrl = String.format(PROTECTED_RESOURCE_URL, rootUrl);
     OAuthRequest request = new OAuthRequest(Verb.GET, protectedResourceUrl);
-    Token t =
-        new Token(token.getToken(), token.getSecret(), token.getRaw());
+    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
 
     Response response = request.send();
     if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(String.format("Status %s (%s) for request %s",
-          response.getCode(), response.getBody(), request.getUrl()));
+      throw new IOException(
+          String.format(
+              "Status %s (%s) for request %s",
+              response.getCode(), response.getBody(), request.getUrl()));
     }
 
     if (log.isDebugEnabled()) {
@@ -96,47 +91,40 @@ class CasOAuthService implements OAuthServiceProvider {
     }
 
     JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(),
-            JsonElement.class);
+        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (!userJson.isJsonObject()) {
-      throw new IOException(String.format(
-          "Invalid JSON '%s': not a JSON Object", userJson));
+      throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
     }
     JsonObject jsonObject = userJson.getAsJsonObject();
 
     JsonElement id = jsonObject.get("id");
     if (id == null || id.isJsonNull()) {
-      throw new IOException(String.format(
-          "Response doesn't contain %s field", "id"));
+      throw new IOException(String.format("Response doesn't contain %s field", "id"));
     }
 
     JsonElement attrListJson = jsonObject.get("attributes");
     if (attrListJson == null || !attrListJson.isJsonArray()) {
-      throw new IOException(String.format(
-          "Invalid JSON '%s': not a JSON Array", attrListJson));
+      throw new IOException(String.format("Invalid JSON '%s': not a JSON Array", attrListJson));
     }
 
     String email = null, name = null, login = null;
     JsonArray attrJson = attrListJson.getAsJsonArray();
     for (JsonElement elem : attrJson) {
       if (elem == null || !elem.isJsonObject()) {
-        throw new IOException(String.format(
-            "Invalid JSON '%s': not a JSON Object", elem));
+        throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
       }
       JsonObject obj = elem.getAsJsonObject();
 
       String property = getStringElement(obj, "email");
-      if (property != null)
-        email = property;
+      if (property != null) email = property;
       property = getStringElement(obj, "name");
-      if (property != null)
-        name = property;
+      if (property != null) name = property;
       property = getStringElement(obj, "login");
-      if (property != null)
-        login = property;
+      if (property != null) login = property;
     }
 
-    return new OAuthUserInfo(CAS_PROVIDER_PREFIX + id.getAsString(),
+    return new OAuthUserInfo(
+        CAS_PROVIDER_PREFIX + id.getAsString(),
         login,
         email,
         name,
@@ -145,8 +133,7 @@ class CasOAuthService implements OAuthServiceProvider {
 
   private String getStringElement(JsonObject o, String name) {
     JsonElement elem = o.get(name);
-    if (elem == null || elem.isJsonNull())
-      return null;
+    if (elem == null || elem.isJsonNull()) return null;
 
     return elem.getAsString();
   }
@@ -155,8 +142,7 @@ class CasOAuthService implements OAuthServiceProvider {
   public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
     Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(),
-        to.getSecret(), to.getRawResponse());
+    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
   }
 
   @Override

@@ -31,7 +31,13 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
@@ -43,24 +49,13 @@ import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.servlet.http.HttpServletResponse;
-
 @Singleton
 class GoogleOAuthService implements OAuthServiceProvider {
-  private static final Logger log =
-      LoggerFactory.getLogger(GoogleOAuthService.class);
+  private static final Logger log = LoggerFactory.getLogger(GoogleOAuthService.class);
   static final String CONFIG_SUFFIX = "-google-oauth";
   private static final String GOOGLE_PROVIDER_PREFIX = "google-oauth:";
-  private static final String PROTECTED_RESOURCE_URL =
-      "https://www.googleapis.com/userinfo/v2/me";
-      //"https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+  private static final String PROTECTED_RESOURCE_URL = "https://www.googleapis.com/userinfo/v2/me";
+  //"https://www.googleapis.com/plus/v1/people/me/openIdConnect";
   private static final String SCOPE = "email profile";
   private final OAuthService service;
   private final String canonicalWebUrl;
@@ -69,28 +64,28 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private final boolean fixLegacyUserId;
 
   @Inject
-  GoogleOAuthService(PluginConfigFactory cfgFactory,
+  GoogleOAuthService(
+      PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(
-        pluginName + CONFIG_SUFFIX);
-    this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
-        urlProvider.get()) + "/";
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+    this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     if (cfg.getBoolean(InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false)) {
-      log.warn(String.format("The support for: %s is disconinued",
-          InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
+      log.warn(
+          String.format(
+              "The support for: %s is disconinued", InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
     }
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     this.domains = Arrays.asList(cfg.getStringList(InitOAuth.DOMAIN));
-    this.useEmailAsUsername = cfg.getBoolean(
-        InitOAuth.USE_EMAIL_AS_USERNAME, false);
-    this.service = new ServiceBuilder()
-        .provider(Google2Api.class)
-        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-        .callback(canonicalWebUrl + "oauth")
-        .scope(SCOPE)
-        .build();
+    this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
+    this.service =
+        new ServiceBuilder()
+            .provider(Google2Api.class)
+            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+            .callback(canonicalWebUrl + "oauth")
+            .scope(SCOPE)
+            .build();
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
@@ -102,17 +97,17 @@ class GoogleOAuthService implements OAuthServiceProvider {
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    Token t =
-        new Token(token.getToken(), token.getSecret(), token.getRaw());
+    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
     Response response = request.send();
     if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(String.format("Status %s (%s) for request %s",
-          response.getCode(), response.getBody(), request.getUrl()));
+      throw new IOException(
+          String.format(
+              "Status %s (%s) for request %s",
+              response.getCode(), response.getBody(), request.getUrl()));
     }
     JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(),
-            JsonElement.class);
+        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
@@ -120,8 +115,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
       if (id == null || id.isJsonNull()) {
-        throw new IOException(String.format(
-            "Response doesn't contain id field"));
+        throw new IOException(String.format("Response doesn't contain id field"));
       }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
@@ -139,8 +133,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
         }
         if (!domainMatched) {
           // TODO(davido): improve error reporting in OAuth extension point
-          log.error("Error: hosted domain validation failed: {}",
-              Strings.nullToEmpty(hdClaim));
+          log.error("Error: hosted domain validation failed: {}", Strings.nullToEmpty(hdClaim));
           return null;
         }
       }
@@ -155,13 +148,11 @@ class GoogleOAuthService implements OAuthServiceProvider {
           fixLegacyUserId ? id.getAsString() : null /*claimedIdentity*/);
     }
 
-    throw new IOException(String.format(
-        "Invalid JSON '%s': not a JSON Object", userJson));
+    throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
   }
 
   private JsonObject retrieveJWTToken(OAuthToken token) {
-    JsonElement idToken =
-        OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
+    JsonElement idToken = OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
     if (idToken != null && idToken.isJsonObject()) {
       JsonObject idTokenObj = idToken.getAsJsonObject();
       JsonElement idTokenElement = idTokenObj.get("id_token");
@@ -169,7 +160,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
         String payload = decodePayload(idTokenElement.getAsString());
         if (!Strings.isNullOrEmpty(payload)) {
           JsonElement tokenJsonElement =
-            OutputFormat.JSON.newGson().fromJson(payload, JsonElement.class);
+              OutputFormat.JSON.newGson().fromJson(payload, JsonElement.class);
           if (tokenJsonElement.isJsonObject()) {
             return tokenJsonElement.getAsJsonObject();
           }
@@ -191,8 +182,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   /**
-   * Decode payload from JWT according to spec:
-   * "header.payload.signature"
+   * Decode payload from JWT according to spec: "header.payload.signature"
    *
    * @param idToken Base64 encoded tripple, separated with dot
    * @return openid_id part of payload, when contained, null otherwise
@@ -210,9 +200,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
   public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
     Token to = service.getAccessToken(null, vi);
-    OAuthToken result = new OAuthToken(to.getToken(),
-        to.getSecret(), to.getRawResponse());
-     return result;
+    OAuthToken result = new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    return result;
   }
 
   @Override
@@ -220,8 +209,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
     String url = service.getAuthorizationUrl(null);
     try {
       if (domains.size() == 1) {
-        url += "&hd=" + URLEncoder.encode(domains.get(0),
-            StandardCharsets.UTF_8.name());
+        url += "&hd=" + URLEncoder.encode(domains.get(0), StandardCharsets.UTF_8.name());
       } else if (domains.size() > 1) {
         url += "&hd=*";
       }

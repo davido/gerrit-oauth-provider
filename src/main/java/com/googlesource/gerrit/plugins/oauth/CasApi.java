@@ -19,8 +19,7 @@ import org.scribe.model.OAuthConfig;
 import org.scribe.utils.OAuthEncoder;
 
 public class CasApi extends DefaultApi20 {
-  private static final String AUTHORIZE_URL =
-      "%s/oauth2.0/authorize?client_id=%s&redirect_uri=%s";
+  private static final String AUTHORIZE_URL = "%s/oauth2.0/authorize?client_id=%s&redirect_uri=%s";
 
   private final String rootUrl;
 
@@ -35,7 +34,7 @@ public class CasApi extends DefaultApi20 {
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(AUTHORIZE_URL, rootUrl, config.getApiKey(),
-        OAuthEncoder.encode(config.getCallback()));
+    return String.format(
+        AUTHORIZE_URL, rootUrl, config.getApiKey(), OAuthEncoder.encode(config.getCallback()));
   }
 }

@@ -14,6 +14,10 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.server.OutputFormat.JSON;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
@@ -28,6 +32,7 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import java.io.IOException;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
@@ -37,70 +42,61 @@ import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-
-import static com.google.gerrit.server.OutputFormat.JSON;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.slf4j.LoggerFactory.getLogger;
-
 @Singleton
 public class GitLabOAuthService implements OAuthServiceProvider {
   private static final Logger log = getLogger(GitLabOAuthService.class);
   static final String CONFIG_SUFFIX = "-gitlab-oauth";
-  private static final String PROTECTED_RESOURCE_URL =
-      "%s/api/v3/user";
-  private static final String GITLAB_PROVIDER_PREFIX ="gitlab-oauth:";
+  private static final String PROTECTED_RESOURCE_URL = "%s/api/v3/user";
+  private static final String GITLAB_PROVIDER_PREFIX = "gitlab-oauth:";
   private final OAuthService service;
   private final String rootUrl;
 
   @Inject
-  GitLabOAuthService(PluginConfigFactory cfgFactory,
+  GitLabOAuthService(
+      PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(
-        pluginName + CONFIG_SUFFIX);
-    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
-        urlProvider.get()) + "/";
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     rootUrl = cfg.getString(InitOAuth.ROOT_URL);
-    service = new ServiceBuilder().provider(new GitLabApi(rootUrl))
-        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-        .callback(canonicalWebUrl + "oauth")
-        .build();
+    service =
+        new ServiceBuilder()
+            .provider(new GitLabApi(rootUrl))
+            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+            .callback(canonicalWebUrl + "oauth")
+            .build();
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    final String protectedResourceUrl =
-        String.format(PROTECTED_RESOURCE_URL, rootUrl);
+    final String protectedResourceUrl = String.format(PROTECTED_RESOURCE_URL, rootUrl);
     OAuthRequest request = new OAuthRequest(Verb.GET, protectedResourceUrl);
-    Token t =
-        new Token(token.getToken(), token.getSecret(), token.getRaw());
+    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
 
     Response response = request.send();
     if (response.getCode() != SC_OK) {
-      throw new IOException(String.format("Status %s (%s) for request %s",
-          response.getCode(), response.getBody(), request.getUrl()));
+      throw new IOException(
+          String.format(
+              "Status %s (%s) for request %s",
+              response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson =
-        JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
     JsonObject jsonObject = userJson.getAsJsonObject();
     if (jsonObject == null || jsonObject.isJsonNull()) {
-      throw new IOException(
-          "Response doesn't contain 'user' field" + jsonObject);
+      throw new IOException("Response doesn't contain 'user' field" + jsonObject);
     }
     JsonElement id = jsonObject.get("id");
     JsonElement username = jsonObject.get("username");
     JsonElement email = jsonObject.get("email");
     JsonElement name = jsonObject.get("name");
-    return new OAuthUserInfo(GITLAB_PROVIDER_PREFIX + id.getAsString(),
-        username == null || username.isJsonNull()
-            ? null
-            : username.getAsString(),
+    return new OAuthUserInfo(
+        GITLAB_PROVIDER_PREFIX + id.getAsString(),
+        username == null || username.isJsonNull() ? null : username.getAsString(),
         email == null || email.isJsonNull() ? null : email.getAsString(),
         name == null || name.isJsonNull() ? null : name.getAsString(),
         null);

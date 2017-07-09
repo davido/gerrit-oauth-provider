@@ -14,6 +14,12 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.server.OutputFormat.JSON;
+import static java.lang.String.format;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
+import static org.scribe.model.OAuthConstants.CODE;
+
 import com.google.common.io.BaseEncoding;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -28,12 +34,6 @@ import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
 
-import static com.google.gerrit.server.OutputFormat.JSON;
-import static java.lang.String.format;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
-import static org.scribe.model.OAuthConstants.CODE;
-
 public class BitbucketApi extends DefaultApi20 {
 
   private static final String AUTHORIZE_URL =
@@ -41,8 +41,7 @@ public class BitbucketApi extends DefaultApi20 {
   private static final String ACCESS_TOKEN_ENDPOINT =
       "https://bitbucket.org/site/oauth2/access_token";
 
-  public BitbucketApi() {
-  }
+  public BitbucketApi() {}
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
@@ -85,8 +84,8 @@ public class BitbucketApi extends DefaultApi20 {
 
     @Override
     public Token getAccessToken(Token token, Verifier verifier) {
-      OAuthRequest request = new OAuthRequest(api.getAccessTokenVerb(),
-          api.getAccessTokenEndpoint());
+      OAuthRequest request =
+          new OAuthRequest(api.getAccessTokenVerb(), api.getAccessTokenEndpoint());
       request.addHeader("Authorization", prepareAuthorizationHeaderValue());
       request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
       request.addBodyParameter(CODE, verifier.getValue());
@@ -97,7 +96,8 @@ public class BitbucketApi extends DefaultApi20 {
       }
 
       throw new OAuthException(
-          String.format("Error response received: %s, HTTP status: %s",
+          String.format(
+              "Error response received: %s, HTTP status: %s",
               response.getBody(), response.getCode()));
     }
 
@@ -129,8 +129,7 @@ public class BitbucketApi extends DefaultApi20 {
     }
   }
 
-  private static final class BitbucketTokenExtractor
-      implements AccessTokenExtractor {
+  private static final class BitbucketTokenExtractor implements AccessTokenExtractor {
 
     @Override
     public Token extract(String response) {
@@ -139,15 +138,13 @@ public class BitbucketApi extends DefaultApi20 {
         JsonObject jsonObject = json.getAsJsonObject();
         JsonElement id = jsonObject.get(ACCESS_TOKEN);
         if (id == null || id.isJsonNull()) {
-          throw new OAuthException(
-              "Response doesn't contain 'access_token' field");
+          throw new OAuthException("Response doesn't contain 'access_token' field");
         }
         JsonElement accessToken = jsonObject.get(ACCESS_TOKEN);
         return new Token(accessToken.getAsString(), "");
       }
 
-      throw new OAuthException(
-          String.format("Invalid JSON '%s': not a JSON Object", json));
+      throw new OAuthException(String.format("Invalid JSON '%s': not a JSON Object", json));
     }
   }
 }
