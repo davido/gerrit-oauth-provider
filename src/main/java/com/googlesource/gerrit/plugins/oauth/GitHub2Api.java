@@ -29,7 +29,7 @@ public class GitHub2Api extends DefaultApi20 {
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(AUTHORIZE_URL, config.getApiKey(),
-        OAuthEncoder.encode(config.getCallback()));
+    return String.format(
+        AUTHORIZE_URL, config.getApiKey(), OAuthEncoder.encode(config.getCallback()));
   }
 }

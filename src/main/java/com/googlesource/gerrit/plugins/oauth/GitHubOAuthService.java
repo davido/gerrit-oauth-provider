@@ -29,7 +29,8 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-
+import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
@@ -40,55 +41,49 @@ import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-import javax.servlet.http.HttpServletResponse;
-
 @Singleton
 class GitHubOAuthService implements OAuthServiceProvider {
-  private static final Logger log =
-      LoggerFactory.getLogger(GitHubOAuthService.class);
+  private static final Logger log = LoggerFactory.getLogger(GitHubOAuthService.class);
   static final String CONFIG_SUFFIX = "-github-oauth";
-  private final static String GITHUB_PROVIDER_PREFIX = "github-oauth:";
-  private static final String PROTECTED_RESOURCE_URL =
-      "https://api.github.com/user";
+  private static final String GITHUB_PROVIDER_PREFIX = "github-oauth:";
+  private static final String PROTECTED_RESOURCE_URL = "https://api.github.com/user";
 
   private static final String SCOPE = "user:email";
   private final boolean fixLegacyUserId;
   private final OAuthService service;
 
   @Inject
-  GitHubOAuthService(PluginConfigFactory cfgFactory,
+  GitHubOAuthService(
+      PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(
-        pluginName + CONFIG_SUFFIX);
-    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
-        urlProvider.get()) + "/";
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
-    service = new ServiceBuilder()
-        .provider(GitHub2Api.class)
-        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-        .callback(canonicalWebUrl + "oauth")
-        .scope(SCOPE)
-        .build();
+    service =
+        new ServiceBuilder()
+            .provider(GitHub2Api.class)
+            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+            .callback(canonicalWebUrl + "oauth")
+            .scope(SCOPE)
+            .build();
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    Token t =
-        new Token(token.getToken(), token.getSecret(), token.getRaw());
+    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
     service.signRequest(t, request);
     Response response = request.send();
     if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(String.format("Status %s (%s) for request %s",
-          response.getCode(), response.getBody(), request.getUrl()));
+      throw new IOException(
+          String.format(
+              "Status %s (%s) for request %s",
+              response.getCode(), response.getBody(), request.getUrl()));
     }
     JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(),
-            JsonElement.class);
+        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
@@ -96,8 +91,7 @@ class GitHubOAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
       if (id == null || id.isJsonNull()) {
-        throw new IOException(String.format(
-            "Response doesn't contain id field"));
+        throw new IOException(String.format("Response doesn't contain id field"));
       }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
@@ -110,16 +104,14 @@ class GitHubOAuthService implements OAuthServiceProvider {
           fixLegacyUserId ? id.getAsString() : null);
     }
 
-    throw new IOException(String.format(
-        "Invalid JSON '%s': not a JSON Object", userJson));
+    throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
   }
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
     Token to = service.getAccessToken(null, vi);
-    OAuthToken result = new OAuthToken(to.getToken(),
-        to.getSecret(), to.getRawResponse());
+    OAuthToken result = new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
     return result;
   }
 

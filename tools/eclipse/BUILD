@@ -1,5 +1,5 @@
-load("@com_googlesource_gerrit_bazlets//tools:commons.bzl", "PLUGIN_DEPS")
-load("@com_googlesource_gerrit_bazlets//tools:classpath.bzl", "classpath_collector")
+load("//tools/bzl:plugin.bzl", "gerrit_plugin", "PLUGIN_DEPS")
+load("//tools/bzl:classpath.bzl", "classpath_collector")
 
 java_library(
     name = "classpath",

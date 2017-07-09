@@ -31,8 +31,7 @@ class DisabledOAuthLoginProvider implements OAuthLoginProvider {
   }
 
   @Override
-  public OAuthUserInfo login(String username, String secret)
-      throws IOException {
+  public OAuthUserInfo login(String username, String secret) throws IOException {
     throw new UnsupportedOperationException(
         "git over oauth is not implemented by " + pluginName + " plugin");
   }

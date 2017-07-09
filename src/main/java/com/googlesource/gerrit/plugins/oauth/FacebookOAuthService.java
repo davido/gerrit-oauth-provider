@@ -29,7 +29,8 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-
+import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.builder.api.FacebookApi;
 import org.scribe.model.OAuthRequest;
@@ -41,17 +42,11 @@ import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-import javax.servlet.http.HttpServletResponse;
-
 @Singleton
 class FacebookOAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory
-      .getLogger(FacebookOAuthService.class);
+  private static final Logger log = LoggerFactory.getLogger(FacebookOAuthService.class);
   static final String CONFIG_SUFFIX = "-facebook-oauth";
-  private static final String PROTECTED_RESOURCE_URL =
-      "https://graph.facebook.com/me";
+  private static final String PROTECTED_RESOURCE_URL = "https://graph.facebook.com/me";
 
   private static final String FACEBOOK_PROVIDER_PREFIX = "facebook-oauth:";
   private static final String SCOPE = "email";
@@ -60,22 +55,22 @@ class FacebookOAuthService implements OAuthServiceProvider {
   private final OAuthService service;
 
   @Inject
-  FacebookOAuthService(PluginConfigFactory cfgFactory,
+  FacebookOAuthService(
+      PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
 
-    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName
-        + CONFIG_SUFFIX);
-    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(
-        urlProvider.get())
-        + "/";
+    PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
 
-    service = new ServiceBuilder().provider(FacebookApi.class)
-        .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
-        .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-        .callback(canonicalWebUrl + "oauth")
-        .scope(SCOPE)
-        .build();
+    service =
+        new ServiceBuilder()
+            .provider(FacebookApi.class)
+            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+            .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
+            .callback(canonicalWebUrl + "oauth")
+            .scope(SCOPE)
+            .build();
   }
 
   @Override
@@ -87,11 +82,13 @@ class FacebookOAuthService implements OAuthServiceProvider {
     Response response = request.send();
 
     if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(String.format("Status %s (%s) for request %s",
-          response.getCode(), response.getBody(), request.getUrl()));
+      throw new IOException(
+          String.format(
+              "Status %s (%s) for request %s",
+              response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson = OutputFormat.JSON.newGson().fromJson(
-        response.getBody(), JsonElement.class);
+    JsonElement userJson =
+        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
 
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
@@ -100,8 +97,7 @@ class FacebookOAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
       if (id == null || id.isJsonNull()) {
-        throw new IOException(
-            String.format("Response doesn't contain id field"));
+        throw new IOException(String.format("Response doesn't contain id field"));
       }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");
@@ -110,23 +106,22 @@ class FacebookOAuthService implements OAuthServiceProvider {
       // deprecated for Facebook API versions v2.0 and higher
       JsonElement login = jsonObject.get("email");
 
-      return new OAuthUserInfo(FACEBOOK_PROVIDER_PREFIX + id.getAsString(),
+      return new OAuthUserInfo(
+          FACEBOOK_PROVIDER_PREFIX + id.getAsString(),
           login == null || login.isJsonNull() ? null : login.getAsString(),
           email == null || email.isJsonNull() ? null : email.getAsString(),
           name == null || name.isJsonNull() ? null : name.getAsString(),
           null);
     }
 
-    throw new IOException(String.format("Invalid JSON '%s': not a JSON Object",
-        userJson));
+    throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
   }
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
     Token to = service.getAccessToken(null, vi);
-    OAuthToken result = new OAuthToken(to.getToken(), to.getSecret(),
-        to.getRawResponse());
+    OAuthToken result = new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
 
     return result;
   }

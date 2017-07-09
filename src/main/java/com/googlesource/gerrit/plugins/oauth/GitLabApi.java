@@ -14,18 +14,20 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.scribe.builder.api.DefaultApi20;
 import org.scribe.exceptions.OAuthException;
 import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.model.*;
+import org.scribe.model.OAuthConfig;
+import org.scribe.model.OAuthConstants;
+import org.scribe.model.OAuthRequest;
+import org.scribe.model.Response;
+import org.scribe.model.Token;
+import org.scribe.model.Verb;
+import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
-
 import org.scribe.utils.Preconditions;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static java.lang.String.format;
 
 public class GitLabApi extends DefaultApi20 {
   private static final String AUTHORIZE_URL =
@@ -39,8 +41,7 @@ public class GitLabApi extends DefaultApi20 {
 
   @Override
   public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(AUTHORIZE_URL, rootUrl, config.getApiKey(),
-        config.getCallback());
+    return String.format(AUTHORIZE_URL, rootUrl, config.getApiKey(), config.getCallback());
   }
 
   @Override
@@ -75,7 +76,7 @@ public class GitLabApi extends DefaultApi20 {
     /**
      * Default constructor
      *
-     * @param api    OAuth2.0 api information
+     * @param api OAuth2.0 api information
      * @param config OAuth 2.0 configuration param object
      */
     public GitLabOAuthService(DefaultApi20 api, OAuthConfig config) {
@@ -83,20 +84,15 @@ public class GitLabApi extends DefaultApi20 {
       this.config = config;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Token getAccessToken(Token requestToken, Verifier verifier) {
       OAuthRequest request =
-          new OAuthRequest(api.getAccessTokenVerb(),
-              api.getAccessTokenEndpoint());
+          new OAuthRequest(api.getAccessTokenVerb(), api.getAccessTokenEndpoint());
       request.addBodyParameter(OAuthConstants.CLIENT_ID, config.getApiKey());
-      request.addBodyParameter(OAuthConstants.CLIENT_SECRET,
-          config.getApiSecret());
+      request.addBodyParameter(OAuthConstants.CLIENT_SECRET, config.getApiSecret());
       request.addBodyParameter(OAuthConstants.CODE, verifier.getValue());
-      request.addBodyParameter(OAuthConstants.REDIRECT_URI,
-          config.getCallback());
+      request.addBodyParameter(OAuthConstants.REDIRECT_URI, config.getCallback());
       if (config.hasScope()) {
         request.addBodyParameter(OAuthConstants.SCOPE, config.getScope());
       }
@@ -105,57 +101,44 @@ public class GitLabApi extends DefaultApi20 {
       return api.getAccessTokenExtractor().extract(response.getBody());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Token getRequestToken() {
       throw new UnsupportedOperationException(
           "Unsupported operation, please use 'getAuthorizationUrl' and redirect your users there");
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getVersion() {
       return VERSION;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void signRequest(Token accessToken, OAuthRequest request) {
-      request.addQuerystringParameter(OAuthConstants.ACCESS_TOKEN,
-          accessToken.getToken());
+      request.addQuerystringParameter(OAuthConstants.ACCESS_TOKEN, accessToken.getToken());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAuthorizationUrl(Token requestToken) {
       return api.getAuthorizationUrl(config);
     }
   }
 
-  private static final class GitLabJsonTokenExtractor implements
-      AccessTokenExtractor {
-    private Pattern accessTokenPattern = Pattern
-        .compile("\"access_token\"\\s*:\\s*\"(\\S*?)\"");
+  private static final class GitLabJsonTokenExtractor implements AccessTokenExtractor {
+    private Pattern accessTokenPattern = Pattern.compile("\"access_token\"\\s*:\\s*\"(\\S*?)\"");
 
     @Override
     public Token extract(String response) {
-      Preconditions.checkEmptyString(response,
-          "Cannot extract a token from a null or empty String");
+      Preconditions.checkEmptyString(
+          response, "Cannot extract a token from a null or empty String");
       Matcher matcher = accessTokenPattern.matcher(response);
       if (matcher.find()) {
         return new Token(matcher.group(1), "", response);
-      } else {
-        throw new OAuthException(
-            "Cannot extract an acces token. Response was: " + response);
       }
+      throw new OAuthException("Cannot extract an acces token. Response was: " + response);
     }
   }
 }
