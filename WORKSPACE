@@ -3,7 +3,7 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "d1dd04380a2e41a32fca265c999936c35fcfae14",
+    commit = "b7514d03a7798905ff1513295b46620e57b8f386",
     #    local_path = "/home/<user>/projects/bazlets",
 )
 
@@ -15,16 +15,5 @@ load(
 
 gerrit_api()
 
-load("@com_googlesource_gerrit_bazlets//tools:maven_jar.bzl", "maven_jar")
-
-maven_jar(
-    name = "scribe",
-    artifact = "org.scribe:scribe:1.3.7",
-    sha1 = "583921bed46635d9f529ef5f14f7c9e83367bc6e",
-)
-
-maven_jar(
-    name = "commons_codec",
-    artifact = "commons-codec:commons-codec:1.4",
-    sha1 = "4216af16d38465bbab0f3dff8efa14204f7a399a",
-)
+load(":external_plugin_deps.bzl", "external_plugin_deps")
+external_plugin_deps(omit_commons_codec = False)

@@ -85,6 +85,8 @@ plugin.gerrit-oauth-provider-cas-oauth.root-url = "https://example.com/cas"
 
 is required, since CAS is a self-hosted application.
 
+Note that the CAS OAuth plugin only supports CAS V5 and higher.
+
 The plugin expects CAS to make several attributes available to it:
 
 | Name | Description | Required |

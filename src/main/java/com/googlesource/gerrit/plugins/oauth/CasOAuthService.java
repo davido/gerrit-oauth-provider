@@ -99,28 +99,35 @@ class CasOAuthService implements OAuthServiceProvider {
 
     JsonElement id = jsonObject.get("id");
     if (id == null || id.isJsonNull()) {
-      throw new IOException(String.format("Response doesn't contain %s field", "id"));
+      throw new IOException(String.format("CAS response missing id: %s", response.getBody()));
     }
 
     JsonElement attrListJson = jsonObject.get("attributes");
-    if (attrListJson == null || !attrListJson.isJsonArray()) {
-      throw new IOException(String.format("Invalid JSON '%s': not a JSON Array", attrListJson));
+    if (attrListJson == null) {
+      throw new IOException(
+          String.format("CAS response missing attributes: %s", response.getBody()));
     }
 
     String email = null, name = null, login = null;
-    JsonArray attrJson = attrListJson.getAsJsonArray();
-    for (JsonElement elem : attrJson) {
-      if (elem == null || !elem.isJsonObject()) {
-        throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
-      }
-      JsonObject obj = elem.getAsJsonObject();
 
-      String property = getStringElement(obj, "email");
-      if (property != null) email = property;
-      property = getStringElement(obj, "name");
-      if (property != null) name = property;
-      property = getStringElement(obj, "login");
-      if (property != null) login = property;
+    if (attrListJson != null && attrListJson.isJsonArray()) {
+      // It is possible for CAS to be configured to not return any attributes (email, name, login), in which case,
+      // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON array "attributes": []
+
+      JsonArray attrJson = attrListJson.getAsJsonArray();
+      for (JsonElement elem : attrJson) {
+        if (elem == null || !elem.isJsonObject()) {
+          throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
+        }
+        JsonObject obj = elem.getAsJsonObject();
+
+        String property = getStringElement(obj, "email");
+        if (property != null) email = property;
+        property = getStringElement(obj, "name");
+        if (property != null) name = property;
+        property = getStringElement(obj, "login");
+        if (property != null) login = property;
+      }
     }
 
     return new OAuthUserInfo(
