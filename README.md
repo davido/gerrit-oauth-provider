@@ -38,7 +38,7 @@ To build the plugin with Bazel, install
 following:
 
 ```
-  bazel build gerrit-oauth-provider
+  bazel build oauth
 ```
 
 Install
