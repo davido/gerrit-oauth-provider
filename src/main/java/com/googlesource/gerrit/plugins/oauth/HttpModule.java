@@ -77,5 +77,12 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(GitLabOAuthService.CONFIG_SUFFIX))
           .to(GitLabOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + DexOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(DexOAuthService.CONFIG_SUFFIX))
+          .to(DexOAuthService.class);
+    }
   }
 }

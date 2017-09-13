@@ -31,6 +31,13 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
       root-url = "<gitlab url>"
       client-id = "<client-id>"
       client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-dex-oauth"]
+      domain = "<domain for username manipulation (optional)>"
+      service-name = "<custom service name (optional)>"
+      root-url = "<dex url>"
+      client-id = "<client-id>"
+      client-secret = "<client-secret>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -95,6 +102,16 @@ The plugin expects CAS to make several attributes available to it:
 | login | Login name | no |
 | email |  Email address | no |
 | name | Display name | no |
+
+### CoreOS Dex OAuth
+
+For Dex OAuth setting
+
+```
+plugin.gerrit-oauth-provider-dex-oauth.root-url = "https://example.com"
+```
+
+is required, since Dex is a self-hosted application.
 
 ## Obtaining provider authorizations
 
@@ -174,3 +191,12 @@ After application is saved, the page will show generated client id and
 secret.
 
 ![Generated client id and secret](images/gitlab-2.png)
+
+### CoreOS Dex
+
+The client-id and client-secret for Dex OAuth are part of the Dex
+setup and need to be set manually.
+
+See
+[Using Dex](https://github.com/coreos/dex/blob/master/Documentation/using-dex.md)
+for an example.

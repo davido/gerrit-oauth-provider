@@ -28,6 +28,7 @@ class InitOAuth implements InitStep {
   static final String DOMAIN = "domain";
   static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
   static final String ROOT_URL = "root-url";
+  static final String SERVICE_NAME = "service-name";
   static String FIX_LEGACY_USER_ID_QUESTION = "Fix legacy user id, without oauth provider prefix?";
 
   private final ConsoleUI ui;
@@ -37,6 +38,7 @@ class InitOAuth implements InitStep {
   private final Section casOAuthProviderSection;
   private final Section facebookOAuthProviderSection;
   private final Section gitlabOAuthProviderSection;
+  private final Section dexOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -53,6 +55,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + FacebookOAuthService.CONFIG_SUFFIX);
     this.gitlabOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + GitLabOAuthService.CONFIG_SUFFIX);
+    this.dexOAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + DexOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -99,6 +103,12 @@ class InitOAuth implements InitStep {
     if (configureGitLabOAuthProvider) {
       gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
       configureOAuth(gitlabOAuthProviderSection);
+    }
+
+    boolean configureDexOAuthProvider = ui.yesno(true, "Use Dex OAuth provider for Gerrit login ?");
+    if (configureDexOAuthProvider) {
+      dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
+      configureOAuth(dexOAuthProviderSection);
     }
   }
 
