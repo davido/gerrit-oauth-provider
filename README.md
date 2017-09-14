@@ -9,6 +9,7 @@ Supported OAuth providers:
 
 * [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
+* [CoreOS Dex](https://github.com/coreos/dex)
 * [Facebook](https://developers.facebook.com/docs/facebook-login)
 * [GitHub](https://developer.github.com/v3/oauth/)
 * [GitLab](https://about.gitlab.com/)
