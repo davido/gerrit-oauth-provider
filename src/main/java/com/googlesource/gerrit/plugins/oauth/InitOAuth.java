@@ -28,6 +28,7 @@ class InitOAuth implements InitStep {
   static final String DOMAIN = "domain";
   static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
   static final String ROOT_URL = "root-url";
+  static final String REALM = "realm";
   static final String SERVICE_NAME = "service-name";
   static String FIX_LEGACY_USER_ID_QUESTION = "Fix legacy user id, without oauth provider prefix?";
 
@@ -39,6 +40,7 @@ class InitOAuth implements InitStep {
   private final Section facebookOAuthProviderSection;
   private final Section gitlabOAuthProviderSection;
   private final Section dexOAuthProviderSection;
+  private final Section keycloakOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -57,6 +59,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + GitLabOAuthService.CONFIG_SUFFIX);
     this.dexOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + DexOAuthService.CONFIG_SUFFIX);
+    this.keycloakOAuthProviderSection =
+            sections.get(PLUGIN_SECTION, pluginName + KeycloakOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -109,6 +113,13 @@ class InitOAuth implements InitStep {
     if (configureDexOAuthProvider) {
       dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
       configureOAuth(dexOAuthProviderSection);
+    }
+
+    boolean configureKeycloakOAuthProvider = ui.yesno(true, "Use Keycloak OAuth provider for Gerrit login ?");
+    if (configureKeycloakOAuthProvider) {
+      keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
+      keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
+      configureOAuth(keycloakOAuthProviderSection);
     }
   }
 

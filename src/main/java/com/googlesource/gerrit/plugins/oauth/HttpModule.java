@@ -84,5 +84,12 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(DexOAuthService.CONFIG_SUFFIX))
           .to(DexOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + KeycloakOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+              .annotatedWith(Exports.named(KeycloakOAuthService.CONFIG_SUFFIX))
+              .to(KeycloakOAuthService.class);
+    }
   }
 }

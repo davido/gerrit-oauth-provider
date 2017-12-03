@@ -7,3 +7,4 @@
 /bazel-gerrit-oauth-provider
 /bazel-out
 /bazel-testlogs
+/.idea
