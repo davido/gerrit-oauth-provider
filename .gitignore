@@ -8,3 +8,4 @@
 /bazel-oauth
 /bazel-out
 /bazel-testlogs
+/.idea
