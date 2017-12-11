@@ -22,15 +22,17 @@ import org.scribe.model.Verb;
 import org.scribe.oauth.OAuthService;
 import org.scribe.utils.OAuthEncoder;
 
-public class DexApi extends DefaultApi20 {
+public class KeycloakApi extends DefaultApi20 {
 
   private static final String AUTHORIZE_URL =
-      "%s/dex/auth?client_id=%s&response_type=code&redirect_uri=%s&scope=%s";
+      "%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&response_type=code&redirect_uri=%s&scope=%s";
 
   private final String rootUrl;
+  private final String realm;
 
-  public DexApi(String rootUrl) {
+  public KeycloakApi(String rootUrl, String realm) {
     this.rootUrl = rootUrl;
+    this.realm = realm;
   }
 
   @Override
@@ -38,6 +40,7 @@ public class DexApi extends DefaultApi20 {
     return String.format(
         AUTHORIZE_URL,
         rootUrl,
+        realm,
         config.getApiKey(),
         OAuthEncoder.encode(config.getCallback()),
         config.getScope().replaceAll(" ", "+"));
@@ -45,7 +48,7 @@ public class DexApi extends DefaultApi20 {
 
   @Override
   public String getAccessTokenEndpoint() {
-    return String.format("%s/dex/token", rootUrl);
+    return String.format("%s/auth/realms/%s/protocol/openid-connect/token", rootUrl, realm);
   }
 
   @Override

@@ -28,16 +28,16 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-secret = "<client-secret>"
 
   [plugin "@PLUGIN@-gitlab-oauth"]
-      root-url = "<gitlab url>"
-      client-id = "<client-id>"
-      client-secret = "<client-secret>"
+    root-url = "<gitlab url>"
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
 
   [plugin "@PLUGIN@-dex-oauth"]
-      domain = "<domain for username manipulation (optional)>"
-      service-name = "<custom service name (optional)>"
-      root-url = "<dex url>"
-      client-id = "<client-id>"
-      client-secret = "<client-secret>"
+    domain = "<domain for username manipulation (optional)>"
+    service-name = "<custom service name (optional)>"
+    root-url = "<dex url>"
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
