@@ -1,1 +1,0 @@
-PLUGIN_VERSION = "2.13.2"
