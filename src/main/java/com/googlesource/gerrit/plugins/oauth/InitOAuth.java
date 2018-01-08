@@ -41,6 +41,7 @@ class InitOAuth implements InitStep {
   private final Section gitlabOAuthProviderSection;
   private final Section dexOAuthProviderSection;
   private final Section keycloakOAuthProviderSection;
+  private final Section office365OAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -61,6 +62,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + DexOAuthService.CONFIG_SUFFIX);
     this.keycloakOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + KeycloakOAuthService.CONFIG_SUFFIX);
+    this.office365OAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + Office365OAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -121,6 +124,12 @@ class InitOAuth implements InitStep {
       keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
       configureOAuth(keycloakOAuthProviderSection);
+    }
+
+    boolean configureOffice365OAuthProvider =
+        ui.yesno(true, "Use Office365 OAuth provider for Gerrit login ?");
+    if (configureOffice365OAuthProvider) {
+      configureOAuth(office365OAuthProviderSection);
     }
   }
 
