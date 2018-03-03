@@ -32,7 +32,6 @@ import com.google.inject.Singleton;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.FacebookApi;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
 import org.scribe.model.Token;
@@ -65,7 +64,7 @@ class FacebookOAuthService implements OAuthServiceProvider {
 
     service =
         new ServiceBuilder()
-            .provider(FacebookApi.class)
+            .provider(Facebook2Api.class)
             .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
