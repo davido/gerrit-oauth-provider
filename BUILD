@@ -23,11 +23,11 @@ gerrit_plugin(
 )
 
 junit_tests(
-    name = "oauth_tests",
+    name = "gerrit-oauth-provider_tests",
     srcs = glob(["src/test/java/**/*.java"]),
     tags = ["oauth"],
     deps = PLUGIN_DEPS + [
-        ":oauth__plugin",
+        ":gerrit-oauth-provider__plugin",
         "@scribe//jar",
     ],
 )
