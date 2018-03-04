@@ -43,6 +43,7 @@ before_install:
 script:
   - |
     bazel build --verbose_failures :all
+    bazel test --test_output=errors :oauth_tests
 
 notifications:
   email: false
