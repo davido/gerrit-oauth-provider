@@ -16,6 +16,7 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.scribe.exceptions.OAuthException;
@@ -35,6 +36,7 @@ class OAuth2AccessTokenJsonExtractor implements AccessTokenExtractor {
     return INSTANCE;
   }
 
+  @VisibleForTesting
   @Override
   public Token extract(String response) {
     Preconditions.checkEmptyString(response, "Cannot extract a token from a null or empty String");
