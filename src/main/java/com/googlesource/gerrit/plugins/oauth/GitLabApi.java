@@ -14,16 +14,11 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.scribe.builder.api.DefaultApi20;
-import org.scribe.exceptions.OAuthException;
 import org.scribe.extractors.AccessTokenExtractor;
 import org.scribe.model.OAuthConfig;
-import org.scribe.model.Token;
 import org.scribe.model.Verb;
 import org.scribe.oauth.OAuthService;
-import org.scribe.utils.Preconditions;
 
 public class GitLabApi extends DefaultApi20 {
   private static final String AUTHORIZE_URL =
@@ -57,21 +52,6 @@ public class GitLabApi extends DefaultApi20 {
 
   @Override
   public AccessTokenExtractor getAccessTokenExtractor() {
-    return new GitLabJsonTokenExtractor();
-  }
-
-  private static final class GitLabJsonTokenExtractor implements AccessTokenExtractor {
-    private Pattern accessTokenPattern = Pattern.compile("\"access_token\"\\s*:\\s*\"(\\S*?)\"");
-
-    @Override
-    public Token extract(String response) {
-      Preconditions.checkEmptyString(
-          response, "Cannot extract a token from a null or empty String");
-      Matcher matcher = accessTokenPattern.matcher(response);
-      if (matcher.find()) {
-        return new Token(matcher.group(1), "", response);
-      }
-      throw new OAuthException("Cannot extract an acces token. Response was: " + response);
-    }
+    return OAuth2AccessTokenJsonExtractor.instance();
   }
 }
