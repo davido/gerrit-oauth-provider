@@ -3,26 +3,26 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "11ce7521051ca73598d099aa8a396c9ffe932a74",
+    commit = "5e0b58a466804eca41dd99df75bdf8575de0d167",
     #    local_path = "/home/<user>/projects/bazlets",
 )
 
 # Snapshot Plugin API
-load(
-    "@com_googlesource_gerrit_bazlets//:gerrit_api_maven_local.bzl",
-    "gerrit_api_maven_local",
-)
-
-# Load snapshot Plugin API
-gerrit_api_maven_local()
-
-# Release Plugin API
 #load(
-#    "@com_googlesource_gerrit_bazlets//:gerrit_api.bzl",
-#    "gerrit_api",
+#    "@com_googlesource_gerrit_bazlets//:gerrit_api_maven_local.bzl",
+#    "gerrit_api_maven_local",
 #)
 
-#gerrit_api()
+# Load snapshot Plugin API
+#gerrit_api_maven_local()
+
+# Release Plugin API
+load(
+    "@com_googlesource_gerrit_bazlets//:gerrit_api.bzl",
+    "gerrit_api",
+)
+
+gerrit_api()
 
 load(":external_plugin_deps.bzl", "external_plugin_deps")
 external_plugin_deps(omit_commons_codec = False)
