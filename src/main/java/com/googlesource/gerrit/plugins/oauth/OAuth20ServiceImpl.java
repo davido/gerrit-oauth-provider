@@ -14,6 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import org.scribe.builder.api.DefaultApi20;
 import org.scribe.model.OAuthConfig;
 import org.scribe.model.OAuthConstants;
@@ -22,9 +24,11 @@ import org.scribe.model.Response;
 import org.scribe.model.Token;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
+import org.slf4j.Logger;
 
 /** TODO(gildur): remove when updating to newer scribe lib */
 final class OAuth20ServiceImpl implements OAuthService {
+  private static final Logger log = getLogger(OAuth20ServiceImpl.class);
 
   private static final String VERSION = "2.0";
 
@@ -56,7 +60,13 @@ final class OAuth20ServiceImpl implements OAuthService {
       request.addBodyParameter(OAuthConstants.SCOPE, config.getScope());
     }
     request.addBodyParameter(GRANT_TYPE, GRANT_TYPE_VALUE);
+    if (log.isDebugEnabled()) {
+      log.error("Access token request: {}", request);
+    }
     Response response = request.send();
+    if (log.isDebugEnabled()) {
+      log.error("Access token response: {}", response.getBody());
+    }
     return api.getAccessTokenExtractor().extract(response.getBody());
   }
 
