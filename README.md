@@ -7,6 +7,7 @@ Gerrit OAuth2 authentication provider
 With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
 
+* [AirVantage](https://doc.airvantage.net/av/reference/cloud/API/#API-GeneralInformation-Authentication)
 * [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
 * [CoreOS Dex](https://github.com/coreos/dex)

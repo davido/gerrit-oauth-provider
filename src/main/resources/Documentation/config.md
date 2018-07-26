@@ -38,6 +38,10 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     root-url = "<dex url>"
     client-id = "<client-id>"
     client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-airvantage-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -200,3 +204,9 @@ setup and need to be set manually.
 See
 [Using Dex](https://github.com/coreos/dex/blob/master/Documentation/using-dex.md)
 for an example.
+
+### AirVantage
+
+The client-id and client-secret for AirVantage OAuth can be obtained by registering
+a Client application.
+See [Getting Started](https://source.sierrawireless.com/airvantage/av/howto/cloud/gettingstarted_api).
