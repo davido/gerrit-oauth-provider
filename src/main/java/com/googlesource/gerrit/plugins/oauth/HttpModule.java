@@ -98,5 +98,12 @@ class HttpModule extends HttpPluginModule {
           .annotatedWith(Exports.named(Office365OAuthService.CONFIG_SUFFIX))
           .to(Office365OAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + AirVantageOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(AirVantageOAuthService.CONFIG_SUFFIX))
+          .to(AirVantageOAuthService.class);
+    }
   }
 }

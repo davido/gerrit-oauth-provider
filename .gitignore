@@ -8,3 +8,4 @@
 /bazel-out
 /bazel-testlogs
 /.idea
+*.swp
