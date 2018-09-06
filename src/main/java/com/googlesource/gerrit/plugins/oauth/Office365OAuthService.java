@@ -97,7 +97,7 @@ class Office365OAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
       if (id == null || id.isJsonNull()) {
-        throw new IOException(String.format("Response doesn't contain id field"));
+        throw new IOException("Response doesn't contain id field");
       }
       JsonElement email = jsonObject.get("mail");
       JsonElement name = jsonObject.get("displayName");

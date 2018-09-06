@@ -93,10 +93,10 @@ public class DexOAuthService implements OAuthServiceProvider {
     JsonElement emailElement = claimObject.get("email");
     JsonElement nameElement = claimObject.get("name");
     if (emailElement == null || emailElement.isJsonNull()) {
-      throw new IOException(String.format("Response doesn't contain email field"));
+      throw new IOException("Response doesn't contain email field");
     }
     if (nameElement == null || nameElement.isJsonNull()) {
-      throw new IOException(String.format("Response doesn't contain name field"));
+      throw new IOException("Response doesn't contain name field");
     }
     String email = emailElement.getAsString();
     String name = nameElement.getAsString();
