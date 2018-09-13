@@ -42,6 +42,7 @@ class InitOAuth implements InitStep {
   private final Section dexOAuthProviderSection;
   private final Section keycloakOAuthProviderSection;
   private final Section office365OAuthProviderSection;
+  private final Section airVantageOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -64,6 +65,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + KeycloakOAuthService.CONFIG_SUFFIX);
     this.office365OAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + Office365OAuthService.CONFIG_SUFFIX);
+    this.airVantageOAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + AirVantageOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -130,6 +133,12 @@ class InitOAuth implements InitStep {
         ui.yesno(true, "Use Office365 OAuth provider for Gerrit login ?");
     if (configureOffice365OAuthProvider) {
       configureOAuth(office365OAuthProviderSection);
+    }
+
+    boolean configureAirVantageOAuthProvider =
+        ui.yesno(true, "Use AirVantage OAuth provider for Gerrit login ?");
+    if (configureAirVantageOAuthProvider) {
+      configureOAuth(airVantageOAuthProviderSection);
     }
   }
 
