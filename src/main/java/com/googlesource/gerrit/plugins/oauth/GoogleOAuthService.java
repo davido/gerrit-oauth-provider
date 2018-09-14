@@ -55,7 +55,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
   static final String CONFIG_SUFFIX = "-google-oauth";
   private static final String GOOGLE_PROVIDER_PREFIX = "google-oauth:";
   private static final String PROTECTED_RESOURCE_URL = "https://www.googleapis.com/userinfo/v2/me";
-  //"https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+  // "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
   private static final String SCOPE = "email profile";
   private final OAuthService service;
   private final String canonicalWebUrl;
@@ -115,7 +115,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("id");
       if (id == null || id.isJsonNull()) {
-        throw new IOException(String.format("Response doesn't contain id field"));
+        throw new IOException("Response doesn't contain id field");
       }
       JsonElement email = jsonObject.get("email");
       JsonElement name = jsonObject.get("name");

@@ -111,8 +111,10 @@ class CasOAuthService implements OAuthServiceProvider {
     String email = null, name = null, login = null;
 
     if (attrListJson.isJsonArray()) {
-      // It is possible for CAS to be configured to not return any attributes (email, name, login), in which case,
-      // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON array "attributes": []
+      // It is possible for CAS to be configured to not return any attributes (email, name, login),
+      // in which case,
+      // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON array
+      // "attributes": []
 
       JsonArray attrJson = attrListJson.getAsJsonArray();
       for (JsonElement elem : attrJson) {

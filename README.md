@@ -7,6 +7,7 @@ Gerrit OAuth2 authentication provider
 With this plugin Gerrit can use OAuth2 protocol for authentication. 
 Supported OAuth providers:
 
+* [AirVantage](https://doc.airvantage.net/av/reference/cloud/API/#API-GeneralInformation-Authentication)
 * [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
 * [CoreOS Dex](https://github.com/coreos/dex)
@@ -27,19 +28,20 @@ Prebuilt binary artifacts are available on [release page](https://github.com/dav
 Build
 -----
 
-The plugin can be bulit with Bazel. To build the plugin install
+To build the plugin with Bazel, install
 [Bazel](https://bazel.build/versions/master/docs/install.html) and run the
 following:
 
 ```
-bazel build gerrit-oauth-provider
+  git clone https://gerrit.googlesource.com/plugins/oauth gerrit-oauth-provider
+  cd gerrit-oauth-provider && bazel build gerrit-oauth-provider
 ```
 
 Install
 -------
 
-Copy the `bazel-genfiles/gerrit-oauth-provider.jar` to `$gerit_site/plugins`
-and re-run init to configure it:
+Copy the `bazel-genfiles/gerrit-oauth-provider.jar` to
+`$gerrit_site/plugins` and re-run init to configure it:
 
 ```
   java -jar gerrit.war init -d <site>

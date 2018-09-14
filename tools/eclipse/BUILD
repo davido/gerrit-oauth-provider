@@ -1,4 +1,4 @@
-load("//tools/bzl:plugin.bzl", "gerrit_plugin", "PLUGIN_DEPS")
+load("//tools/bzl:plugin.bzl", "PLUGIN_DEPS", "gerrit_plugin")
 load("//tools/bzl:classpath.bzl", "classpath_collector")
 
 java_library(

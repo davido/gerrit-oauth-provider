@@ -1,8 +1,8 @@
 load("//tools/bzl:junit.bzl", "junit_tests")
 load(
     "//tools/bzl:plugin.bzl",
-    "gerrit_plugin",
     "PLUGIN_DEPS",
+    "gerrit_plugin",
 )
 
 gerrit_plugin(
@@ -17,7 +17,7 @@ gerrit_plugin(
     ],
     resources = glob(["src/main/resources/**/*"]),
     deps = [
-        "@commons_codec//jar:neverlink",
+        "@commons-codec//jar:neverlink",
         "@scribe//jar",
     ],
 )
