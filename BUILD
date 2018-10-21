@@ -2,6 +2,7 @@ load("//tools/bzl:junit.bzl", "junit_tests")
 load(
     "//tools/bzl:plugin.bzl",
     "PLUGIN_DEPS",
+    "PLUGIN_TEST_DEPS",
     "gerrit_plugin",
 )
 
@@ -27,7 +28,16 @@ junit_tests(
     name = "oauth_tests",
     srcs = glob(["src/test/java/**/*.java"]),
     tags = ["oauth"],
-    deps = PLUGIN_DEPS + [
+    deps = [
+        ":oauth__plugin_test_deps",
+    ],
+)
+
+java_library(
+    name = "oauth__plugin_test_deps",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    exports = PLUGIN_DEPS + PLUGIN_TEST_DEPS + [
         ":oauth__plugin",
         "@scribe//jar",
     ],
