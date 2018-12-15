@@ -3,8 +3,8 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "5e0b58a466804eca41dd99df75bdf8575de0d167",
-    #    local_path = "/home/<user>/projects/bazlets",
+    commit = "d025e909c2e8a369712165309f599a2765005f2d",
+    #local_path = "/home/<user>/projects/bazlets",
 )
 
 # Snapshot Plugin API

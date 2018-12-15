@@ -2,6 +2,7 @@ load("//tools/bzl:junit.bzl", "junit_tests")
 load(
     "//tools/bzl:plugin.bzl",
     "PLUGIN_DEPS",
+    "PLUGIN_TEST_DEPS",
     "gerrit_plugin",
 )
 
@@ -26,7 +27,16 @@ junit_tests(
     name = "gerrit-oauth-provider_tests",
     srcs = glob(["src/test/java/**/*.java"]),
     tags = ["oauth"],
-    deps = PLUGIN_DEPS + [
+    deps = [
+        ":gerrit-oauth-provider__plugin_test_deps",
+    ],
+)
+
+java_library(
+    name = "gerrit-oauth-provider__plugin_test_deps",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    exports = PLUGIN_DEPS + PLUGIN_TEST_DEPS + [
         ":gerrit-oauth-provider__plugin",
         "@scribe//jar",
     ],

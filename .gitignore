@@ -1,11 +1,11 @@
 /.classpath
 /.project
-/.settings/org.maven.ide.eclipse.prefs
-/.settings/org.eclipse.m2e.core.prefs
+/.settings
 /bazel-bin
 /bazel-genfiles
 /bazel-gerrit-oauth-provider
 /bazel-out
 /bazel-testlogs
+/eclipse-out
 /.idea
 *.swp

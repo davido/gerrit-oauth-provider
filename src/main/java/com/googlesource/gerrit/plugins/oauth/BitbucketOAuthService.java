@@ -110,7 +110,7 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
   public OAuthToken getAccessToken(OAuthVerifier rv) {
     Verifier vi = new Verifier(rv.getValue());
     Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), null);
+    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
   }
 
   @Override
