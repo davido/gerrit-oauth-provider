@@ -14,7 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import static com.google.gerrit.server.OutputFormat.JSON;
+import static com.google.gerrit.json.OutputFormat.JSON;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;

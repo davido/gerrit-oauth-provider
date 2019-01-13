@@ -20,7 +20,7 @@ import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
-import com.google.gerrit.server.OutputFormat;
+import com.google.gerrit.json.OutputFormat;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
