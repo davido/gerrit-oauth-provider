@@ -14,6 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.json.OutputFormat.JSON;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -22,7 +24,6 @@ import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
-import com.google.gerrit.server.OutputFormat;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
@@ -106,8 +107,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
               "Status %s (%s) for request %s",
               response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
@@ -152,15 +152,14 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   private JsonObject retrieveJWTToken(OAuthToken token) {
-    JsonElement idToken = OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
+    JsonElement idToken = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
     if (idToken != null && idToken.isJsonObject()) {
       JsonObject idTokenObj = idToken.getAsJsonObject();
       JsonElement idTokenElement = idTokenObj.get("id_token");
       if (idTokenElement != null && !idTokenElement.isJsonNull()) {
         String payload = decodePayload(idTokenElement.getAsString());
         if (!Strings.isNullOrEmpty(payload)) {
-          JsonElement tokenJsonElement =
-              OutputFormat.JSON.newGson().fromJson(payload, JsonElement.class);
+          JsonElement tokenJsonElement = JSON.newGson().fromJson(payload, JsonElement.class);
           if (tokenJsonElement.isJsonObject()) {
             return tokenJsonElement.getAsJsonObject();
           }
