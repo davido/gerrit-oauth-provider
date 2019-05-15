@@ -3,7 +3,7 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "298b25cf8c5ef0f27caa215cbc128e530f68d9f4",
+    commit = "c9dad39dbf8c9fa3ec955ac5fb3e2312163136ee",
     #local_path = "/home/<user>/projects/bazlets",
 )
 
