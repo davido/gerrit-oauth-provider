@@ -1,4 +1,6 @@
 load(
     "@com_googlesource_gerrit_bazlets//tools:classpath.bzl",
-    "classpath_collector",
+    _classpath_collector = "classpath_collector",
 )
+
+classpath_collector = _classpath_collector
