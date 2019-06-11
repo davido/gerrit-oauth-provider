@@ -47,7 +47,7 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
   private static final Logger log = getLogger(BitbucketOAuthService.class);
   static final String CONFIG_SUFFIX = "-bitbucket-oauth";
   private static final String BITBUCKET_PROVIDER_PREFIX = "bitbucket-oauth:";
-  private static final String PROTECTED_RESOURCE_URL = "https://bitbucket.org/api/1.0/user/";
+  private static final String PROTECTED_RESOURCE_URL = "https://bitbucket.org/api/2.0/user/";
   private final boolean fixLegacyUserId;
   private final OAuthService service;
 
@@ -86,15 +86,14 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
       log.debug("User info response: {}", response.getBody());
     }
     if (userJson.isJsonObject()) {
-      JsonObject jsonObject = userJson.getAsJsonObject();
-      JsonObject userObject = jsonObject.getAsJsonObject("user");
+      JsonObject userObject = userJson.getAsJsonObject();
       if (userObject == null || userObject.isJsonNull()) {
         throw new IOException("Response doesn't contain 'user' field");
       }
       JsonElement usernameElement = userObject.get("username");
       String username = usernameElement.getAsString();
 
-      JsonElement displayName = jsonObject.get("display_name");
+      JsonElement displayName = userObject.get("display_name");
       return new OAuthUserInfo(
           BITBUCKET_PROVIDER_PREFIX + username,
           username,
