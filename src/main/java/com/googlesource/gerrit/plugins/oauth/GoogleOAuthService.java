@@ -14,6 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.json.OutputFormat.JSON;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -22,7 +24,6 @@ import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
-import com.google.gerrit.server.OutputFormat;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
@@ -54,8 +55,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
   private static final Logger log = LoggerFactory.getLogger(GoogleOAuthService.class);
   static final String CONFIG_SUFFIX = "-google-oauth";
   private static final String GOOGLE_PROVIDER_PREFIX = "google-oauth:";
-  private static final String PROTECTED_RESOURCE_URL = "https://www.googleapis.com/userinfo/v2/me";
-  // "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+  private static final String PROTECTED_RESOURCE_URL =
+      "https://www.googleapis.com/oauth2/v2/userinfo";
   private static final String SCOPE = "email profile";
   private final OAuthService service;
   private final String canonicalWebUrl;
@@ -106,8 +107,7 @@ class GoogleOAuthService implements OAuthServiceProvider {
               "Status %s (%s) for request %s",
               response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());
     }
@@ -152,15 +152,14 @@ class GoogleOAuthService implements OAuthServiceProvider {
   }
 
   private JsonObject retrieveJWTToken(OAuthToken token) {
-    JsonElement idToken = OutputFormat.JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
+    JsonElement idToken = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
     if (idToken != null && idToken.isJsonObject()) {
       JsonObject idTokenObj = idToken.getAsJsonObject();
       JsonElement idTokenElement = idTokenObj.get("id_token");
       if (idTokenElement != null && !idTokenElement.isJsonNull()) {
         String payload = decodePayload(idTokenElement.getAsString());
         if (!Strings.isNullOrEmpty(payload)) {
-          JsonElement tokenJsonElement =
-              OutputFormat.JSON.newGson().fromJson(payload, JsonElement.class);
+          JsonElement tokenJsonElement = JSON.newGson().fromJson(payload, JsonElement.class);
           if (tokenJsonElement.isJsonObject()) {
             return tokenJsonElement.getAsJsonObject();
           }

@@ -14,13 +14,14 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.json.OutputFormat.JSON;
+
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
-import com.google.gerrit.server.OutputFormat;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
@@ -86,8 +87,7 @@ class FacebookOAuthService implements OAuthServiceProvider {
               "Status %s (%s) for request %s",
               response.getCode(), response.getBody(), request.getUrl()));
     }
-    JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
 
     if (log.isDebugEnabled()) {
       log.debug("User info response: {}", response.getBody());

@@ -17,12 +17,12 @@ package com.googlesource.gerrit.plugins.oauth;
 import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
-import com.google.gerrit.httpd.plugins.HttpPluginModule;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
 import com.google.inject.Inject;
+import com.google.inject.servlet.ServletModule;
 
-class HttpModule extends HttpPluginModule {
+class HttpModule extends ServletModule {
 
   private final PluginConfigFactory cfgFactory;
   private final String pluginName;

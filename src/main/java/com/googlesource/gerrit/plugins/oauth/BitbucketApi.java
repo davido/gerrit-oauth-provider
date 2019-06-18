@@ -14,7 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import static com.google.gerrit.server.OutputFormat.JSON;
+import static com.google.gerrit.json.OutputFormat.JSON;
 import static java.lang.String.format;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
