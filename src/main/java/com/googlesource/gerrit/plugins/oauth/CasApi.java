@@ -15,6 +15,7 @@
 package com.googlesource.gerrit.plugins.oauth;
 
 import org.scribe.builder.api.DefaultApi20;
+import org.scribe.extractors.AccessTokenExtractor;
 import org.scribe.model.OAuthConfig;
 import org.scribe.model.Verb;
 import org.scribe.oauth.OAuthService;
@@ -49,5 +50,10 @@ public class CasApi extends DefaultApi20 {
   @Override
   public OAuthService createService(OAuthConfig config) {
     return new OAuth20ServiceImpl(this, config);
+  }
+
+  @Override
+  public AccessTokenExtractor getAccessTokenExtractor() {
+    return OAuth2AccessTokenJsonExtractor.instance();
   }
 }
