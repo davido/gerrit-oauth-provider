@@ -29,8 +29,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.net.URI;
 import javax.servlet.http.HttpServletResponse;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthRequest;
@@ -60,6 +62,9 @@ class CasOAuthService implements OAuthServiceProvider {
       @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
     rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+    if (!URI.create(rootUrl).isAbsolute()) {
+      throw new ProvisionException("Root URL must be absolute URL");
+    }
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     service =
