@@ -18,6 +18,8 @@ import com.google.gerrit.pgm.init.api.ConsoleUI;
 import com.google.gerrit.pgm.init.api.InitStep;
 import com.google.gerrit.pgm.init.api.Section;
 import com.google.inject.Inject;
+import com.google.inject.ProvisionException;
+import java.net.URI;
 
 class InitOAuth implements InitStep {
   static final String PLUGIN_SECTION = "plugin";
@@ -97,7 +99,10 @@ class InitOAuth implements InitStep {
 
     boolean configureCasOAuthProvider = ui.yesno(true, "Use CAS OAuth provider for Gerrit login ?");
     if (configureCasOAuthProvider) {
-      casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
+      String rootUrl = casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
+      if (!URI.create(rootUrl).isAbsolute()) {
+        throw new ProvisionException("Root URL must be absolute URL");
+      }
       configureOAuth(casOAuthProviderSection);
       casOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
@@ -111,20 +116,29 @@ class InitOAuth implements InitStep {
     boolean configureGitLabOAuthProvider =
         ui.yesno(true, "Use GitLab OAuth provider for Gerrit login ?");
     if (configureGitLabOAuthProvider) {
-      gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
+      String rootUrl = gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
+      if (!URI.create(rootUrl).isAbsolute()) {
+        throw new ProvisionException("Root URL must be absolute URL");
+      }
       configureOAuth(gitlabOAuthProviderSection);
     }
 
     boolean configureDexOAuthProvider = ui.yesno(true, "Use Dex OAuth provider for Gerrit login ?");
     if (configureDexOAuthProvider) {
-      dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
+      String rootUrl = dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
+      if (!URI.create(rootUrl).isAbsolute()) {
+        throw new ProvisionException("Root URL must be absolute URL");
+      }
       configureOAuth(dexOAuthProviderSection);
     }
 
     boolean configureKeycloakOAuthProvider =
         ui.yesno(true, "Use Keycloak OAuth provider for Gerrit login ?");
     if (configureKeycloakOAuthProvider) {
-      keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
+      String rootUrl = keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
+      if (!URI.create(rootUrl).isAbsolute()) {
+        throw new ProvisionException("Root URL must be absolute URL");
+      }
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
       configureOAuth(keycloakOAuthProviderSection);
     }
