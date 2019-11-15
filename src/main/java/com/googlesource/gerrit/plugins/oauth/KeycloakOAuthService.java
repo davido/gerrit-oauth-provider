@@ -30,7 +30,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 import java.io.IOException;
+import java.net.URI;
 import org.apache.commons.codec.binary.Base64;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.Token;
@@ -57,6 +59,9 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
 
     String rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+    if (!URI.create(rootUrl).isAbsolute()) {
+      throw new ProvisionException("Root URL must be absolute URL");
+    }
     String realm = cfg.getString(InitOAuth.REALM);
     serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Keycloak OAuth2");
 
