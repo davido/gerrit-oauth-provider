@@ -13,6 +13,9 @@
 // limitations under the License.
 package com.googlesource.gerrit.plugins.oauth;
 
+import static java.util.Objects.requireNonNull;
+
+import com.google.common.base.Strings;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.pgm.init.api.ConsoleUI;
 import com.google.gerrit.pgm.init.api.InitStep;
@@ -77,33 +80,30 @@ class InitOAuth implements InitStep {
 
     boolean configureGoogleOAuthProvider =
         ui.yesno(true, "Use Google OAuth provider for Gerrit login ?");
-    if (configureGoogleOAuthProvider) {
-      configureOAuth(googleOAuthProviderSection);
+    if (configureGoogleOAuthProvider && configureOAuth(googleOAuthProviderSection)) {
       googleOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
     boolean configueGitHubOAuthProvider =
         ui.yesno(true, "Use GitHub OAuth provider for Gerrit login ?");
-    if (configueGitHubOAuthProvider) {
-      configureOAuth(githubOAuthProviderSection);
+    if (configueGitHubOAuthProvider && configureOAuth(githubOAuthProviderSection)) {
       githubOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
     boolean configureBitbucketOAuthProvider =
         ui.yesno(true, "Use Bitbucket OAuth provider for Gerrit login ?");
-    if (configureBitbucketOAuthProvider) {
-      configureOAuth(bitbucketOAuthProviderSection);
+    if (configureBitbucketOAuthProvider && configureOAuth(bitbucketOAuthProviderSection)) {
       bitbucketOAuthProviderSection.string(
           FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
     boolean configureCasOAuthProvider = ui.yesno(true, "Use CAS OAuth provider for Gerrit login ?");
-    if (configureCasOAuthProvider) {
+    if (configureCasOAuthProvider && configureOAuth(casOAuthProviderSection)) {
       String rootUrl = casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
+      requireNonNull(rootUrl);
       if (!URI.create(rootUrl).isAbsolute()) {
         throw new ProvisionException("Root URL must be absolute URL");
       }
-      configureOAuth(casOAuthProviderSection);
       casOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
@@ -115,32 +115,32 @@ class InitOAuth implements InitStep {
 
     boolean configureGitLabOAuthProvider =
         ui.yesno(true, "Use GitLab OAuth provider for Gerrit login ?");
-    if (configureGitLabOAuthProvider) {
+    if (configureGitLabOAuthProvider && configureOAuth(gitlabOAuthProviderSection)) {
       String rootUrl = gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
+      requireNonNull(rootUrl);
       if (!URI.create(rootUrl).isAbsolute()) {
         throw new ProvisionException("Root URL must be absolute URL");
       }
-      configureOAuth(gitlabOAuthProviderSection);
     }
 
     boolean configureDexOAuthProvider = ui.yesno(true, "Use Dex OAuth provider for Gerrit login ?");
-    if (configureDexOAuthProvider) {
+    if (configureDexOAuthProvider && configureOAuth(dexOAuthProviderSection)) {
       String rootUrl = dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
+      requireNonNull(rootUrl);
       if (!URI.create(rootUrl).isAbsolute()) {
         throw new ProvisionException("Root URL must be absolute URL");
       }
-      configureOAuth(dexOAuthProviderSection);
     }
 
     boolean configureKeycloakOAuthProvider =
         ui.yesno(true, "Use Keycloak OAuth provider for Gerrit login ?");
-    if (configureKeycloakOAuthProvider) {
+    if (configureKeycloakOAuthProvider && configureOAuth(keycloakOAuthProviderSection)) {
       String rootUrl = keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
+      requireNonNull(rootUrl);
       if (!URI.create(rootUrl).isAbsolute()) {
         throw new ProvisionException("Root URL must be absolute URL");
       }
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
-      configureOAuth(keycloakOAuthProviderSection);
     }
 
     boolean configureOffice365OAuthProvider =
@@ -156,9 +156,18 @@ class InitOAuth implements InitStep {
     }
   }
 
-  private void configureOAuth(Section s) {
-    s.string("Application client id", CLIENT_ID, null);
-    s.passwordForKey("Application client secret", CLIENT_SECRET);
+  /**
+   * Configure OAuth provider section
+   *
+   * @param s section to configure
+   * @return true if section is present, false otherwise
+   */
+  private boolean configureOAuth(Section s) {
+    if (!Strings.isNullOrEmpty(s.string("Application client id", CLIENT_ID, null))) {
+      s.passwordForKey("Application client secret", CLIENT_SECRET);
+      return true;
+    }
+    return false;
   }
 
   @Override
