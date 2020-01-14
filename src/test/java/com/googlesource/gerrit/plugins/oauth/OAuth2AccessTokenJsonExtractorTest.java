@@ -14,12 +14,12 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.gerrit.testing.GerritJUnit.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.scribe.model.OAuthConstants.ACCESS_TOKEN;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.scribe.exceptions.OAuthException;
 import org.scribe.extractors.AccessTokenExtractor;
 import org.scribe.model.Token;
@@ -32,8 +32,6 @@ public class OAuth2AccessTokenJsonExtractorTest {
   private static final String RESPONSE_WITH_BLANKS =
       "{ \"" + ACCESS_TOKEN + "\" : \"" + TOKEN + "\"}'";
   private static final String MESSAGE = "Cannot extract a token from a null or empty String";
-
-  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void parseResponse() throws Exception {
@@ -49,22 +47,24 @@ public class OAuth2AccessTokenJsonExtractorTest {
 
   @Test
   public void failParseNonJsonResponse() throws Exception {
-    exception.expect(OAuthException.class);
-    exception.expectMessage("Cannot extract an access token. Response was: " + RESPONSE_NON_JSON);
-    extractor.extract(RESPONSE_NON_JSON);
+    OAuthException thrown =
+        assertThrows(OAuthException.class, () -> extractor.extract(RESPONSE_NON_JSON));
+    assertThat(thrown)
+        .hasMessageThat()
+        .contains("Cannot extract an access token. Response was: " + RESPONSE_NON_JSON);
   }
 
   @Test
   public void shouldThrowExceptionIfForNullParameter() throws Exception {
-    exception.expect(IllegalArgumentException.class);
-    exception.expectMessage(MESSAGE);
-    extractor.extract(null);
+    IllegalArgumentException thrown =
+        assertThrows(IllegalArgumentException.class, () -> extractor.extract(null));
+    assertThat(thrown).hasMessageThat().contains(MESSAGE);
   }
 
   @Test
   public void shouldThrowExceptionIfForEmptyString() throws Exception {
-    exception.expect(IllegalArgumentException.class);
-    exception.expectMessage(MESSAGE);
-    extractor.extract("");
+    IllegalArgumentException thrown =
+        assertThrows(IllegalArgumentException.class, () -> extractor.extract(""));
+    assertThat(thrown).hasMessageThat().contains(MESSAGE);
   }
 }
