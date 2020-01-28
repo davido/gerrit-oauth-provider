@@ -82,3 +82,7 @@ Gerrit core in `tools/bzl/plugins.bzl`, and execute:
 ```
   ./tools/eclipse/project.py
 ```
+
+[Back to @PLUGIN@ documentation index][index]
+
+[index]: index.html
