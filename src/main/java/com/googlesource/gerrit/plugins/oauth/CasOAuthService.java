@@ -14,13 +14,20 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.gerrit.server.OutputFormat.JSON;
+
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
-import com.google.gerrit.server.OutputFormat;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
@@ -33,14 +40,8 @@ import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ class CasOAuthService implements OAuthServiceProvider {
 
   private final String rootUrl;
   private final boolean fixLegacyUserId;
-  private final OAuthService service;
+  private final OAuth20Service service;
 
   @Inject
   CasOAuthService(
@@ -68,81 +69,82 @@ class CasOAuthService implements OAuthServiceProvider {
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     service =
-        new ServiceBuilder()
-            .provider(new CasApi(rootUrl))
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
-            .build();
+            .build(new CasApi(rootUrl));
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    final String protectedResourceUrl = String.format(PROTECTED_RESOURCE_URL, rootUrl);
-    OAuthRequest request = new OAuthRequest(Verb.GET, protectedResourceUrl);
-    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
+    OAuthRequest request =
+        new OAuthRequest(Verb.GET, String.format(PROTECTED_RESOURCE_URL, rootUrl));
+    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
 
-    Response response = request.send();
-    if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(
-          String.format(
-              "Status %s (%s) for request %s",
-              response.getCode(), response.getBody(), request.getUrl()));
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug("User info response: {}", response.getBody());
-    }
-
-    JsonElement userJson =
-        OutputFormat.JSON.newGson().fromJson(response.getBody(), JsonElement.class);
-    if (!userJson.isJsonObject()) {
-      throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
-    }
-    JsonObject jsonObject = userJson.getAsJsonObject();
-
-    JsonElement id = jsonObject.get("id");
-    if (id == null || id.isJsonNull()) {
-      throw new IOException(String.format("CAS response missing id: %s", response.getBody()));
-    }
-
-    JsonElement attrListJson = jsonObject.get("attributes");
-    if (attrListJson == null) {
-      throw new IOException(
-          String.format("CAS response missing attributes: %s", response.getBody()));
-    }
-
-    String email = null, name = null, login = null;
-
-    if (attrListJson.isJsonArray()) {
-      // It is possible for CAS to be configured to not return any attributes (email, name, login),
-      // in which case,
-      // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON array
-      // "attributes": []
-
-      JsonArray attrJson = attrListJson.getAsJsonArray();
-      for (JsonElement elem : attrJson) {
-        if (elem == null || !elem.isJsonObject()) {
-          throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
-        }
-        JsonObject obj = elem.getAsJsonObject();
-
-        String property = getStringElement(obj, "email");
-        if (property != null) email = property;
-        property = getStringElement(obj, "name");
-        if (property != null) name = property;
-        property = getStringElement(obj, "login");
-        if (property != null) login = property;
+    try (Response response = service.execute(request)) {
+      if (response.getCode() != HttpServletResponse.SC_OK) {
+        throw new IOException(
+            String.format(
+                "Status %s (%s) for request %s",
+                response.getCode(), response.getBody(), request.getUrl()));
       }
-    }
 
-    return new OAuthUserInfo(
-        CAS_PROVIDER_PREFIX + id.getAsString(),
-        login,
-        email,
-        name,
-        fixLegacyUserId ? id.getAsString() : null);
+      if (log.isDebugEnabled()) {
+        log.debug("User info response: {}", response.getBody());
+      }
+
+      JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+      if (!userJson.isJsonObject()) {
+        throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
+      }
+      JsonObject jsonObject = userJson.getAsJsonObject();
+
+      JsonElement id = jsonObject.get("id");
+      if (id == null || id.isJsonNull()) {
+        throw new IOException(String.format("CAS response missing id: %s", response.getBody()));
+      }
+
+      JsonElement attrListJson = jsonObject.get("attributes");
+      if (attrListJson == null) {
+        throw new IOException(
+            String.format("CAS response missing attributes: %s", response.getBody()));
+      }
+
+      String email = null, name = null, login = null;
+      if (attrListJson.isJsonArray()) {
+        // It is possible for CAS to be configured to not return any attributes (email, name,
+        // login),
+        // in which case,
+        // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON
+        // array
+        // "attributes": []
+
+        JsonArray attrJson = attrListJson.getAsJsonArray();
+        for (JsonElement elem : attrJson) {
+          if (elem == null || !elem.isJsonObject()) {
+            throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
+          }
+          JsonObject obj = elem.getAsJsonObject();
+
+          String property = getStringElement(obj, "email");
+          if (property != null) email = property;
+          property = getStringElement(obj, "name");
+          if (property != null) name = property;
+          property = getStringElement(obj, "login");
+          if (property != null) login = property;
+        }
+      }
+
+      return new OAuthUserInfo(
+          CAS_PROVIDER_PREFIX + id.getAsString(),
+          login,
+          email,
+          name,
+          fixLegacyUserId ? id.getAsString() : null);
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException("Cannot retrieve user info resource", e);
+    }
   }
 
   private String getStringElement(JsonObject o, String name) {
@@ -154,14 +156,20 @@ class CasOAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl(null);
+    return service.getAuthorizationUrl();
   }
 
   @Override

@@ -62,11 +62,12 @@ public class GithubApiUrlTest {
     }
     rootUrl = CharMatcher.is('/').trimTrailingFrom(rootUrl) + "/";
     return String.format(
-        "%slogin/oauth/authorize?client_id=%s&redirect_uri=%s%s",
+        "%slogin/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s%s&scope=%s",
         rootUrl,
         TEST_CLIENT_ID,
         URLEncoder.encode(CANONICAL_URL, StandardCharsets.UTF_8.name()),
-        URLEncoder.encode("/oauth", StandardCharsets.UTF_8.name()));
+        URLEncoder.encode("/oauth", StandardCharsets.UTF_8.name()),
+        URLEncoder.encode(GitHubOAuthService.SCOPE, StandardCharsets.UTF_8.name()));
   }
 
   @Test

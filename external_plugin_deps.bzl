@@ -1,10 +1,24 @@
 load("//tools/bzl:maven_jar.bzl", "maven_jar")
 
 def external_plugin_deps(omit_commons_codec = True):
+    JACKSON_VERS = "2.10.2"
     maven_jar(
-        name = "scribe",
-        artifact = "org.scribe:scribe:1.3.7",
-        sha1 = "583921bed46635d9f529ef5f14f7c9e83367bc6e",
+        name = "scribejava-core",
+        artifact = "com.github.scribejava:scribejava-core:6.9.0",
+        sha1 = "ed761f450d8382f75787e8fee9ae52e7ec768747",
+    )
+    maven_jar(
+        name = "jackson-annotations",
+        artifact = "com.fasterxml.jackson.core:jackson-annotations:" + JACKSON_VERS,
+        sha1 = "3a13b6105946541b8d4181a0506355b5fae63260",
+    )
+    maven_jar(
+        name = "jackson-databind",
+        artifact = "com.fasterxml.jackson.core:jackson-databind:" + JACKSON_VERS,
+        sha1 = "0528de95f198afafbcfb0c09d2e43b6e0ea663ec",
+        deps = [
+            "@jackson-annotations//jar",
+        ],
     )
     maven_jar(
         name = "mockito",
