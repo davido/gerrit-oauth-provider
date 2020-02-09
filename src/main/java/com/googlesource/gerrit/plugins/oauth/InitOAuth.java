@@ -79,25 +79,33 @@ class InitOAuth implements InitStep {
     ui.header("OAuth Authentication Provider");
 
     boolean configureGoogleOAuthProvider =
-        ui.yesno(true, "Use Google OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(googleOAuthProviderSection),
+            "Use Google OAuth provider for Gerrit login ?");
     if (configureGoogleOAuthProvider && configureOAuth(googleOAuthProviderSection)) {
       googleOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
     boolean configueGitHubOAuthProvider =
-        ui.yesno(true, "Use GitHub OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(githubOAuthProviderSection),
+            "Use GitHub OAuth provider for Gerrit login ?");
     if (configueGitHubOAuthProvider && configureOAuth(githubOAuthProviderSection)) {
       githubOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
     boolean configureBitbucketOAuthProvider =
-        ui.yesno(true, "Use Bitbucket OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(bitbucketOAuthProviderSection),
+            "Use Bitbucket OAuth provider for Gerrit login ?");
     if (configureBitbucketOAuthProvider && configureOAuth(bitbucketOAuthProviderSection)) {
       bitbucketOAuthProviderSection.string(
           FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
-    boolean configureCasOAuthProvider = ui.yesno(true, "Use CAS OAuth provider for Gerrit login ?");
+    boolean configureCasOAuthProvider =
+        ui.yesno(
+            isConfigured(casOAuthProviderSection), "Use CAS OAuth provider for Gerrit login ?");
     if (configureCasOAuthProvider && configureOAuth(casOAuthProviderSection)) {
       String rootUrl = casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
       requireNonNull(rootUrl);
@@ -108,13 +116,17 @@ class InitOAuth implements InitStep {
     }
 
     boolean configueFacebookOAuthProvider =
-        ui.yesno(true, "Use Facebook OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(facebookOAuthProviderSection),
+            "Use Facebook OAuth provider for Gerrit login ?");
     if (configueFacebookOAuthProvider) {
       configureOAuth(facebookOAuthProviderSection);
     }
 
     boolean configureGitLabOAuthProvider =
-        ui.yesno(true, "Use GitLab OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(gitlabOAuthProviderSection),
+            "Use GitLab OAuth provider for Gerrit login ?");
     if (configureGitLabOAuthProvider && configureOAuth(gitlabOAuthProviderSection)) {
       String rootUrl = gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
       requireNonNull(rootUrl);
@@ -123,7 +135,9 @@ class InitOAuth implements InitStep {
       }
     }
 
-    boolean configureDexOAuthProvider = ui.yesno(true, "Use Dex OAuth provider for Gerrit login ?");
+    boolean configureDexOAuthProvider =
+        ui.yesno(
+            isConfigured(dexOAuthProviderSection), "Use Dex OAuth provider for Gerrit login ?");
     if (configureDexOAuthProvider && configureOAuth(dexOAuthProviderSection)) {
       String rootUrl = dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
       requireNonNull(rootUrl);
@@ -133,7 +147,9 @@ class InitOAuth implements InitStep {
     }
 
     boolean configureKeycloakOAuthProvider =
-        ui.yesno(true, "Use Keycloak OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(keycloakOAuthProviderSection),
+            "Use Keycloak OAuth provider for Gerrit login ?");
     if (configureKeycloakOAuthProvider && configureOAuth(keycloakOAuthProviderSection)) {
       String rootUrl = keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
       requireNonNull(rootUrl);
@@ -144,16 +160,30 @@ class InitOAuth implements InitStep {
     }
 
     boolean configureOffice365OAuthProvider =
-        ui.yesno(true, "Use Office365 OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(office365OAuthProviderSection),
+            "Use Office365 OAuth provider for Gerrit login ?");
     if (configureOffice365OAuthProvider) {
       configureOAuth(office365OAuthProviderSection);
     }
 
     boolean configureAirVantageOAuthProvider =
-        ui.yesno(true, "Use AirVantage OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(airVantageOAuthProviderSection),
+            "Use AirVantage OAuth provider for Gerrit login ?");
     if (configureAirVantageOAuthProvider) {
       configureOAuth(airVantageOAuthProviderSection);
     }
+  }
+
+  /**
+   * Retrieve client id to check whether or not this provider was already configured.
+   *
+   * @param s OAuth provider section
+   * @return true if client id key is present, false otherwise
+   */
+  private static boolean isConfigured(Section s) {
+    return !Strings.isNullOrEmpty(s.get(CLIENT_ID));
   }
 
   /**
@@ -162,7 +192,7 @@ class InitOAuth implements InitStep {
    * @param s section to configure
    * @return true if section is present, false otherwise
    */
-  private boolean configureOAuth(Section s) {
+  private static boolean configureOAuth(Section s) {
     if (!Strings.isNullOrEmpty(s.string("Application client id", CLIENT_ID, null))) {
       s.passwordForKey("Application client secret", CLIENT_SECRET);
       return true;
