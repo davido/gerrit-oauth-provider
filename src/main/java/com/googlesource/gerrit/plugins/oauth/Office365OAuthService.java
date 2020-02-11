@@ -16,6 +16,12 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
 
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
@@ -31,14 +37,8 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ class Office365OAuthService implements OAuthServiceProvider {
   private static final String PROTECTED_RESOURCE_URL = "https://graph.microsoft.com/v1.0/me";
   private static final String SCOPE =
       "openid offline_access https://graph.microsoft.com/user.readbasic.all";
-  private final OAuthService service;
+  private final OAuth20Service service;
   private final String canonicalWebUrl;
   private final boolean useEmailAsUsername;
 
@@ -63,13 +63,11 @@ class Office365OAuthService implements OAuthServiceProvider {
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
     this.service =
-        new ServiceBuilder()
-            .provider(Office365Api.class)
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
-            .scope(SCOPE)
-            .build();
+            .defaultScope(SCOPE)
+            .build(new Office365Api());
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
@@ -80,38 +78,43 @@ class Office365OAuthService implements OAuthServiceProvider {
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    request.addHeader("Accept", "*/*");
-    request.addHeader("Authorization", "Bearer " + token.getToken());
-    Response response = request.send();
-    if (response.getCode() != HttpServletResponse.SC_OK) {
-      throw new IOException(
-          String.format(
-              "Status %s (%s) for request %s",
-              response.getCode(), response.getBody(), request.getUrl()));
-    }
-    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
-    if (log.isDebugEnabled()) {
-      log.debug("User info response: {}", response.getBody());
-    }
-    if (userJson.isJsonObject()) {
-      JsonObject jsonObject = userJson.getAsJsonObject();
-      JsonElement id = jsonObject.get("id");
-      if (id == null || id.isJsonNull()) {
-        throw new IOException("Response doesn't contain id field");
-      }
-      JsonElement email = jsonObject.get("mail");
-      JsonElement name = jsonObject.get("displayName");
-      String login = null;
+    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
+    service.signRequest(t, request);
 
-      if (useEmailAsUsername && !email.isJsonNull()) {
-        login = email.getAsString().split("@")[0];
+    JsonElement userJson = null;
+    try (Response response = service.execute(request)) {
+      if (response.getCode() != HttpServletResponse.SC_OK) {
+        throw new IOException(
+            String.format(
+                "Status %s (%s) for request %s",
+                response.getCode(), response.getBody(), request.getUrl()));
       }
-      return new OAuthUserInfo(
-          OFFICE365_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
-          login /*username*/,
-          email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
-          name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
-          null);
+      userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+      if (log.isDebugEnabled()) {
+        log.debug("User info response: {}", response.getBody());
+      }
+      if (userJson.isJsonObject()) {
+        JsonObject jsonObject = userJson.getAsJsonObject();
+        JsonElement id = jsonObject.get("id");
+        if (id == null || id.isJsonNull()) {
+          throw new IOException("Response doesn't contain id field");
+        }
+        JsonElement email = jsonObject.get("mail");
+        JsonElement name = jsonObject.get("displayName");
+        String login = null;
+
+        if (useEmailAsUsername && !email.isJsonNull()) {
+          login = email.getAsString().split("@")[0];
+        }
+        return new OAuthUserInfo(
+            OFFICE365_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
+            login /*username*/,
+            email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
+            name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
+            null);
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException("Cannot retrieve user info resource", e);
     }
 
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
@@ -119,15 +122,20 @@ class Office365OAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    OAuthToken result = new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
-    return result;
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    String url = service.getAuthorizationUrl(null);
+    String url = service.getAuthorizationUrl();
     return url;
   }
 

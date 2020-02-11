@@ -16,6 +16,9 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
 
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.gerrit.extensions.annotations.PluginName;
@@ -34,18 +37,18 @@ import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.codec.binary.Base64;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.Token;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class DexOAuthService implements OAuthServiceProvider {
+  private static final Logger log = LoggerFactory.getLogger(DexOAuthService.class);
 
   static final String CONFIG_SUFFIX = "-dex-oauth";
   private static final String DEX_PROVIDER_PREFIX = "dex-oauth:";
-  private final OAuthService service;
+  private final OAuth20Service service;
   private final String rootUrl;
   private final String domain;
   private final String serviceName;
@@ -66,13 +69,11 @@ public class DexOAuthService implements OAuthServiceProvider {
     serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Dex OAuth2");
 
     service =
-        new ServiceBuilder()
-            .provider(new DexApi(rootUrl))
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-            .scope("openid profile email offline_access")
+            .defaultScope("openid profile email offline_access")
             .callback(canonicalWebUrl + "oauth")
-            .build();
+            .build(new DexApi(rootUrl));
   }
 
   private String parseJwt(String input) {
@@ -120,14 +121,20 @@ public class DexOAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl(null);
+    return service.getAuthorizationUrl();
   }
 
   @Override

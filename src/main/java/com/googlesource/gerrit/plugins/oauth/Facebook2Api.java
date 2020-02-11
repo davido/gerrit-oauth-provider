@@ -14,12 +14,23 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import org.scribe.builder.api.FacebookApi;
-import org.scribe.extractors.AccessTokenExtractor;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
+import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
-public class Facebook2Api extends FacebookApi {
+public class Facebook2Api extends DefaultApi20 {
   @Override
-  public AccessTokenExtractor getAccessTokenExtractor() {
-    return OAuth2AccessTokenJsonExtractor.instance();
+  protected String getAuthorizationBaseUrl() {
+    return "https://www.facebook.com/dialog/oauth";
+  }
+
+  @Override
+  public String getAccessTokenEndpoint() {
+    return "https://graph.facebook.com/oauth/access_token";
+  }
+
+  @Override
+  public ClientAuthentication getClientAuthentication() {
+    return RequestBodyAuthenticationScheme.instance();
   }
 }

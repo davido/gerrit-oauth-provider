@@ -18,6 +18,12 @@ import static com.google.gerrit.json.OutputFormat.JSON;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
@@ -33,13 +39,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import java.io.IOException;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 
 @Singleton
@@ -49,7 +49,7 @@ public class AirVantageOAuthService implements OAuthServiceProvider {
   private static final String AV_PROVIDER_PREFIX = "airvantage-oauth:";
   private static final String PROTECTED_RESOURCE_URL =
       "https://eu.airvantage.net/api/v1/users/current";
-  private final OAuthService service;
+  private final OAuth20Service service;
 
   @Inject
   AirVantageOAuthService(
@@ -60,44 +60,47 @@ public class AirVantageOAuthService implements OAuthServiceProvider {
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
 
     service =
-        new ServiceBuilder()
-            .provider(AirVantageApi.class)
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
-            .build();
+            .build(new AirVantageApi());
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
+    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
-    Response response = request.send();
-    if (response.getCode() != SC_OK) {
-      throw new IOException(
-          String.format(
-              "Status %s (%s) for request %s",
-              response.getCode(), response.getBody(), request.getUrl()));
-    }
-    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
-    if (log.isDebugEnabled()) {
-      log.debug("User info response: {}", response.getBody());
-    }
-    if (userJson.isJsonObject()) {
-      JsonObject jsonObject = userJson.getAsJsonObject();
-      JsonElement id = jsonObject.get("uid");
-      if (id == null || id.isJsonNull()) {
-        throw new IOException("Response doesn't contain uid field");
+
+    JsonElement userJson = null;
+    try (Response response = service.execute(request)) {
+      if (response.getCode() != SC_OK) {
+        throw new IOException(
+            String.format(
+                "Status %s (%s) for request %s",
+                response.getCode(), response.getBody(), request.getUrl()));
       }
-      JsonElement email = jsonObject.get("email");
-      JsonElement name = jsonObject.get("name");
-      return new OAuthUserInfo(
-          AV_PROVIDER_PREFIX + id.getAsString(),
-          null,
-          email.getAsString(),
-          name.getAsString(),
-          id.getAsString());
+      userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+      if (log.isDebugEnabled()) {
+        log.debug("User info response: {}", response.getBody());
+      }
+      if (userJson.isJsonObject()) {
+        JsonObject jsonObject = userJson.getAsJsonObject();
+        JsonElement id = jsonObject.get("uid");
+        if (id == null || id.isJsonNull()) {
+          throw new IOException("Response doesn't contain uid field");
+        }
+        JsonElement email = jsonObject.get("email");
+        JsonElement name = jsonObject.get("name");
+        return new OAuthUserInfo(
+            AV_PROVIDER_PREFIX + id.getAsString(),
+            null,
+            email.getAsString(),
+            name.getAsString(),
+            id.getAsString());
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException("Cannot retrieve user info resource", e);
     }
 
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
@@ -105,14 +108,20 @@ public class AirVantageOAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl(null);
+    return service.getAuthorizationUrl();
   }
 
   @Override

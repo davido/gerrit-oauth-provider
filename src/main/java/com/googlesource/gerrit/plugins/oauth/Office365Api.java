@@ -14,49 +14,23 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import static org.scribe.utils.OAuthEncoder.encode;
-
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.model.OAuthConfig;
-import org.scribe.model.Verb;
-import org.scribe.oauth.OAuthService;
-import org.scribe.utils.Preconditions;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
+import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
 public class Office365Api extends DefaultApi20 {
-  private static final String AUTHORIZE_URL =
-      "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=%s";
-
   @Override
   public String getAccessTokenEndpoint() {
     return "https://login.microsoftonline.com/organizations/oauth2/v2.0/token";
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    Preconditions.checkValidUrl(
-        config.getCallback(),
-        "Must provide a valid url as callback. Office365 does not support OOB");
-    Preconditions.checkEmptyString(
-        config.getScope(),
-        "Must provide a valid value as scope. Office365 does not support no scope");
-
-    return String.format(
-        AUTHORIZE_URL, config.getApiKey(), encode(config.getCallback()), encode(config.getScope()));
+  public String getAuthorizationBaseUrl() {
+    return "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize";
   }
 
   @Override
-  public Verb getAccessTokenVerb() {
-    return Verb.POST;
-  }
-
-  @Override
-  public OAuthService createService(OAuthConfig config) {
-    return new OAuth20ServiceImpl(this, config);
-  }
-
-  @Override
-  public AccessTokenExtractor getAccessTokenExtractor() {
-    return OAuth2AccessTokenJsonExtractor.instance();
+  public ClientAuthentication getClientAuthentication() {
+    return RequestBodyAuthenticationScheme.instance();
   }
 }

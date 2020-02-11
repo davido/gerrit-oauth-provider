@@ -14,15 +14,15 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.model.OAuthConfig;
-import org.scribe.model.Verb;
-import org.scribe.oauth.OAuthService;
-import org.scribe.utils.OAuthEncoder;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
+import com.github.scribejava.core.extractors.TokenExtractor;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 
 public class CasApi extends DefaultApi20 {
-  private static final String AUTHORIZE_URL =
-      "%s/oauth2.0/authorize?response_type=code&client_id=%s&redirect_uri=%s";
+  private static final String AUTHORIZE_URL = "%s/oauth2.0/authorize";
 
   private final String rootUrl;
 
@@ -36,18 +36,17 @@ public class CasApi extends DefaultApi20 {
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(
-        AUTHORIZE_URL, rootUrl, config.getApiKey(), OAuthEncoder.encode(config.getCallback()));
+  public String getAuthorizationBaseUrl() {
+    return String.format(AUTHORIZE_URL, rootUrl);
   }
 
   @Override
-  public Verb getAccessTokenVerb() {
-    return Verb.POST;
+  public BearerSignature getBearerSignature() {
+    return BearerSignatureURIQueryParameter.instance();
   }
 
   @Override
-  public OAuthService createService(OAuthConfig config) {
-    return new OAuth20ServiceImpl(this, config);
+  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
+    return OAuth2AccessTokenExtractor.instance();
   }
 }
