@@ -21,7 +21,8 @@ gerrit_plugin(
     resources = glob(["src/main/resources/**/*"]),
     deps = [
         "@commons-codec//jar:neverlink",
-        "@scribe//jar",
+        "@jackson-databind//jar",
+        "@scribejava-core//jar",
     ],
 )
 
@@ -40,6 +41,6 @@ java_library(
     visibility = ["//visibility:public"],
     exports = PLUGIN_DEPS + PLUGIN_TEST_DEPS + [
         ":oauth__plugin",
-        "@scribe//jar",
+        "@mockito//jar",
     ],
 )

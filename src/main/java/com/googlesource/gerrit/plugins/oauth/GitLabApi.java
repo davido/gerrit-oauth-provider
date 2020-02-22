@@ -14,15 +14,12 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.model.OAuthConfig;
-import org.scribe.model.Verb;
-import org.scribe.oauth.OAuthService;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
+import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
 public class GitLabApi extends DefaultApi20 {
-  private static final String AUTHORIZE_URL =
-      "%s/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s";
+  private static final String AUTHORIZE_URL = "%s/oauth/authorize";
 
   private final String rootUrl;
 
@@ -31,8 +28,8 @@ public class GitLabApi extends DefaultApi20 {
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(AUTHORIZE_URL, rootUrl, config.getApiKey(), config.getCallback());
+  public String getAuthorizationBaseUrl() {
+    return String.format(AUTHORIZE_URL, rootUrl);
   }
 
   @Override
@@ -41,17 +38,7 @@ public class GitLabApi extends DefaultApi20 {
   }
 
   @Override
-  public Verb getAccessTokenVerb() {
-    return Verb.POST;
-  }
-
-  @Override
-  public OAuthService createService(OAuthConfig config) {
-    return new OAuth20ServiceImpl(this, config);
-  }
-
-  @Override
-  public AccessTokenExtractor getAccessTokenExtractor() {
-    return OAuth2AccessTokenJsonExtractor.instance();
+  public ClientAuthentication getClientAuthentication() {
+    return RequestBodyAuthenticationScheme.instance();
   }
 }
