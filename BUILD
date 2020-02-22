@@ -40,6 +40,5 @@ java_library(
     visibility = ["//visibility:public"],
     exports = PLUGIN_DEPS + PLUGIN_TEST_DEPS + [
         ":gerrit-oauth-provider__plugin",
-        "@mockito//jar",
     ],
 )
