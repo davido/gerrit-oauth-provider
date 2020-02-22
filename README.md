@@ -40,7 +40,7 @@ following:
 Install
 -------
 
-Copy the `bazel-genfiles/oauth.jar` to
+Copy the `bazel-bin/oauth.jar` to
 `$gerrit_site/plugins` and re-run init to configure it:
 
 ```

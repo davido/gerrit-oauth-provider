@@ -14,22 +14,32 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.model.OAuthConfig;
-import org.scribe.utils.OAuthEncoder;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
+import com.github.scribejava.core.extractors.TokenExtractor;
+import com.github.scribejava.core.model.OAuth2AccessToken;
 
 public class GitHub2Api extends DefaultApi20 {
-  private static final String AUTHORIZE_URL =
-      "https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s";
+  private static final String AUTHORIZE_URL = "%slogin/oauth/authorize";
 
-  @Override
-  public String getAccessTokenEndpoint() {
-    return "https://github.com/login/oauth/access_token";
+  private final String rootUrl;
+
+  public GitHub2Api(String rootUrl) {
+    this.rootUrl = rootUrl;
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(
-        AUTHORIZE_URL, config.getApiKey(), OAuthEncoder.encode(config.getCallback()));
+  public String getAccessTokenEndpoint() {
+    return String.format("%slogin/oauth/access_token", rootUrl);
+  }
+
+  @Override
+  protected String getAuthorizationBaseUrl() {
+    return String.format(AUTHORIZE_URL, rootUrl);
+  }
+
+  @Override
+  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
+    return OAuth2AccessTokenExtractor.instance();
   }
 }

@@ -14,18 +14,16 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.extractors.JsonTokenExtractor;
-import org.scribe.model.OAuthConfig;
-import org.scribe.model.Verb;
-import org.scribe.oauth.OAuthService;
-import org.scribe.utils.OAuthEncoder;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
+import com.github.scribejava.core.extractors.TokenExtractor;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 
 public class DexApi extends DefaultApi20 {
 
-  private static final String AUTHORIZE_URL =
-      "%s/dex/auth?client_id=%s&response_type=code&redirect_uri=%s&scope=%s";
+  private static final String AUTHORIZE_URL = "%s/dex/auth";
 
   private final String rootUrl;
 
@@ -34,13 +32,8 @@ public class DexApi extends DefaultApi20 {
   }
 
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    return String.format(
-        AUTHORIZE_URL,
-        rootUrl,
-        config.getApiKey(),
-        OAuthEncoder.encode(config.getCallback()),
-        config.getScope().replaceAll(" ", "+"));
+  public String getAuthorizationBaseUrl() {
+    return String.format(AUTHORIZE_URL, rootUrl);
   }
 
   @Override
@@ -49,17 +42,12 @@ public class DexApi extends DefaultApi20 {
   }
 
   @Override
-  public Verb getAccessTokenVerb() {
-    return Verb.POST;
+  public BearerSignature getBearerSignature() {
+    return BearerSignatureURIQueryParameter.instance();
   }
 
   @Override
-  public OAuthService createService(OAuthConfig config) {
-    return new OAuth20ServiceImpl(this, config);
-  }
-
-  @Override
-  public AccessTokenExtractor getAccessTokenExtractor() {
-    return new JsonTokenExtractor();
+  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
+    return OAuth2AccessTokenExtractor.instance();
   }
 }

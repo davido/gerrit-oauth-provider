@@ -16,6 +16,9 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
 
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.gerrit.extensions.annotations.PluginName;
@@ -30,12 +33,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.codec.binary.Base64;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.Token;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
 
   static final String CONFIG_SUFFIX = "-keycloak-oauth";
   private static final String KEYCLOAK_PROVIDER_PREFIX = "keycloak-oauth:";
-  private final OAuthService service;
+  private final OAuth20Service service;
   private final String serviceName;
 
   @Inject
@@ -57,17 +59,18 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
 
     String rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+    if (!URI.create(rootUrl).isAbsolute()) {
+      throw new ProvisionException("Root URL must be absolute URL");
+    }
     String realm = cfg.getString(InitOAuth.REALM);
     serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Keycloak OAuth2");
 
     service =
-        new ServiceBuilder()
-            .provider(new KeycloakApi(rootUrl, realm))
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-            .scope("openid")
             .callback(canonicalWebUrl + "oauth")
-            .build();
+            .defaultScope("openid")
+            .build(new KeycloakApi(rootUrl, realm));
   }
 
   private String parseJwt(String input) {
@@ -116,14 +119,20 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl(null);
+    return service.getAuthorizationUrl();
   }
 
   @Override

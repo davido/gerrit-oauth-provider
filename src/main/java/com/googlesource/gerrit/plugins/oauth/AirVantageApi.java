@@ -14,43 +14,31 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import static java.lang.String.format;
-
-import org.scribe.builder.api.DefaultApi20;
-import org.scribe.extractors.AccessTokenExtractor;
-import org.scribe.extractors.JsonTokenExtractor;
-import org.scribe.model.OAuthConfig;
-import org.scribe.model.Verb;
-import org.scribe.oauth.OAuthService;
+import com.github.scribejava.core.builder.api.DefaultApi20;
+import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
+import com.github.scribejava.core.extractors.TokenExtractor;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 
 public class AirVantageApi extends DefaultApi20 {
-
-  private static final String AUTHORIZE_URL =
-      "https://eu.airvantage.net/api/oauth/authorize?client_id=%s&response_type=code";
-  private static final String ACCESS_TOKEN_ENDPOINT = "https://eu.airvantage.net/api/oauth/token";
-
   @Override
-  public String getAuthorizationUrl(OAuthConfig config) {
-    return format(AUTHORIZE_URL, config.getApiKey());
+  public String getAuthorizationBaseUrl() {
+    return "https://eu.airvantage.net/api/oauth/authorize";
   }
 
   @Override
   public String getAccessTokenEndpoint() {
-    return ACCESS_TOKEN_ENDPOINT;
+    return "https://eu.airvantage.net/api/oauth/token";
   }
 
   @Override
-  public Verb getAccessTokenVerb() {
-    return Verb.POST;
+  public BearerSignature getBearerSignature() {
+    return BearerSignatureURIQueryParameter.instance();
   }
 
   @Override
-  public AccessTokenExtractor getAccessTokenExtractor() {
-    return new JsonTokenExtractor();
-  }
-
-  @Override
-  public OAuthService createService(OAuthConfig config) {
-    return new OAuth20ServiceImpl(this, config);
+  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
+    return OAuth2AccessTokenExtractor.instance();
   }
 }

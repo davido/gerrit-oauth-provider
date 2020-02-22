@@ -26,7 +26,7 @@ Issue the command:
 The output is created in
 
 ```
-  bazel-genfiles/@PLUGIN@.jar
+  bazel-bin/@PLUGIN@.jar
 ```
 
 This project can be imported into the Eclipse IDE:
@@ -65,7 +65,14 @@ From Gerrit source tree issue the command:
 The output is created in
 
 ```
-  bazel-genfiles/plugins/@PLUGIN@/@PLUGIN@.jar
+  bazel-bin/plugins/@PLUGIN@/@PLUGIN@.jar
+```
+
+To execute the tests run either one of:
+
+```
+  bazel test --test_tag_filters=@PLUGIN@ //...
+  bazel test plugins/@PLUGIN@:@PLUGIN@_tests
 ```
 
 This project can be imported into the Eclipse IDE.
@@ -75,3 +82,7 @@ Gerrit core in `tools/bzl/plugins.bzl`, and execute:
 ```
   ./tools/eclipse/project.py
 ```
+
+[Back to @PLUGIN@ documentation index][index]
+
+[index]: index.html

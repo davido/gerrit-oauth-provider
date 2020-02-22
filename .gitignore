@@ -1,8 +1,8 @@
+/.apt_generated
 /.classpath
 /.project
 /.settings
 /bazel-bin
-/bazel-genfiles
 /bazel-gerrit-oauth-provider
 /bazel-out
 /bazel-testlogs

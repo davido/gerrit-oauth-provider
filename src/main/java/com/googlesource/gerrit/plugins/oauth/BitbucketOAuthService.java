@@ -18,6 +18,12 @@ import static com.google.gerrit.json.OutputFormat.JSON;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
@@ -33,13 +39,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import java.io.IOException;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 
 @Singleton
@@ -49,7 +49,7 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
   private static final String BITBUCKET_PROVIDER_PREFIX = "bitbucket-oauth:";
   private static final String PROTECTED_RESOURCE_URL = "https://bitbucket.org/api/1.0/user/";
   private final boolean fixLegacyUserId;
-  private final OAuthService service;
+  private final OAuth20Service service;
 
   @Inject
   BitbucketOAuthService(
@@ -61,46 +61,50 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
     String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
     service =
-        new ServiceBuilder()
-            .provider(BitbucketApi.class)
-            .apiKey(cfg.getString(InitOAuth.CLIENT_ID))
+        new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
-            .build();
+            .build(new BitbucketApi());
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    Token t = new Token(token.getToken(), token.getSecret(), token.getRaw());
+    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
-    Response response = request.send();
-    if (response.getCode() != SC_OK) {
-      throw new IOException(
-          String.format(
-              "Status %s (%s) for request %s",
-              response.getCode(), response.getBody(), request.getUrl()));
-    }
-    JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
-    if (log.isDebugEnabled()) {
-      log.debug("User info response: {}", response.getBody());
-    }
-    if (userJson.isJsonObject()) {
-      JsonObject jsonObject = userJson.getAsJsonObject();
-      JsonObject userObject = jsonObject.getAsJsonObject("user");
-      if (userObject == null || userObject.isJsonNull()) {
-        throw new IOException("Response doesn't contain 'user' field");
-      }
-      JsonElement usernameElement = userObject.get("username");
-      String username = usernameElement.getAsString();
 
-      JsonElement displayName = jsonObject.get("display_name");
-      return new OAuthUserInfo(
-          BITBUCKET_PROVIDER_PREFIX + username,
-          username,
-          null,
-          displayName == null || displayName.isJsonNull() ? null : displayName.getAsString(),
-          fixLegacyUserId ? username : null);
+    JsonElement userJson = null;
+    try (Response response = service.execute(request)) {
+
+      if (response.getCode() != SC_OK) {
+        throw new IOException(
+            String.format(
+                "Status %s (%s) for request %s",
+                response.getCode(), response.getBody(), request.getUrl()));
+      }
+      userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+      if (log.isDebugEnabled()) {
+        log.debug("User info response: {}", response.getBody());
+      }
+      if (userJson.isJsonObject()) {
+        JsonObject jsonObject = userJson.getAsJsonObject();
+        JsonObject userObject = jsonObject.getAsJsonObject("user");
+        if (userObject == null || userObject.isJsonNull()) {
+          throw new IOException("Response doesn't contain 'user' field");
+        }
+        JsonElement usernameElement = userObject.get("username");
+        String username = usernameElement.getAsString();
+
+        JsonElement displayName = jsonObject.get("display_name");
+        return new OAuthUserInfo(
+            BITBUCKET_PROVIDER_PREFIX + username,
+            username,
+            null,
+            displayName == null || displayName.isJsonNull() ? null : displayName.getAsString(),
+            fixLegacyUserId ? username : null);
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException("Cannot retrieve user info resource", e);
     }
 
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
@@ -108,14 +112,20 @@ public class BitbucketOAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthToken getAccessToken(OAuthVerifier rv) {
-    Verifier vi = new Verifier(rv.getValue());
-    Token to = service.getAccessToken(null, vi);
-    return new OAuthToken(to.getToken(), to.getSecret(), to.getRawResponse());
+    try {
+      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
+      return new OAuthToken(
+          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+    } catch (InterruptedException | ExecutionException | IOException e) {
+      String msg = "Cannot retrieve access token";
+      log.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 
   @Override
   public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl(null);
+    return service.getAuthorizationUrl();
   }
 
   @Override

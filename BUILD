@@ -1,3 +1,4 @@
+load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/bzl:junit.bzl", "junit_tests")
 load(
     "//tools/bzl:plugin.bzl",
@@ -19,7 +20,8 @@ gerrit_plugin(
     resources = glob(["src/main/resources/**/*"]),
     deps = [
         "@commons-codec//jar:neverlink",
-        "@scribe//jar",
+        "@jackson-databind//jar",
+        "@scribejava-core//jar",
     ],
 )
 
@@ -38,6 +40,6 @@ java_library(
     visibility = ["//visibility:public"],
     exports = PLUGIN_DEPS + PLUGIN_TEST_DEPS + [
         ":gerrit-oauth-provider__plugin",
-        "@scribe//jar",
+        "@mockito//jar",
     ],
 )
