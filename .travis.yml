@@ -13,23 +13,21 @@
 # limitations under the License.
 #
 
-dist: trusty
+dist: bionic
 sudo: required
 language: java
 
 matrix:
   include:
     - os: linux
-      jdk: oraclejdk8
-    - os: osx
-      osx_image: xcode8
+      jdk: oraclejdk11
 
 install: true
 
 before_install:
   - OS=linux
   - ARCH=x86_64
-  - V=0.11.0
+  - V=2.1.0
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then OS=darwin; fi
   - GH_BASE="https://github.com/bazelbuild/bazel/releases/download/$V"
   - GH_ARTIFACT="bazel-$V-installer-$OS-$ARCH.sh"
