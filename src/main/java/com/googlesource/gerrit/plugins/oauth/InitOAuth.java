@@ -44,6 +44,7 @@ class InitOAuth implements InitStep {
   private final Section casOAuthProviderSection;
   private final Section facebookOAuthProviderSection;
   private final Section gitlabOAuthProviderSection;
+  private final Section lemonldapOAuthProviderSection;
   private final Section dexOAuthProviderSection;
   private final Section keycloakOAuthProviderSection;
   private final Section office365OAuthProviderSection;
@@ -64,6 +65,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + FacebookOAuthService.CONFIG_SUFFIX);
     this.gitlabOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + GitLabOAuthService.CONFIG_SUFFIX);
+    this.lemonldapOAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + LemonLDAPOAuthService.CONFIG_SUFFIX);
     this.dexOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + DexOAuthService.CONFIG_SUFFIX);
     this.keycloakOAuthProviderSection =
@@ -133,6 +136,17 @@ class InitOAuth implements InitStep {
       if (!URI.create(rootUrl).isAbsolute()) {
         throw new ProvisionException("Root URL must be absolute URL");
       }
+    }
+
+    boolean configureLemonLDAPOAuthProvider =
+        ui.yesno(true, "Use LemonLDAP OAuth provider for Gerrit login ?");
+    if (configureLemonLDAPOAuthProvider) {
+      String rootUrl = lemonldapOAuthProviderSection.string("LemonLDAP Root URL", ROOT_URL, null);
+      requireNonNull(rootUrl);
+      if (!URI.create(rootUrl).isAbsolute()) {
+        throw new ProvisionException("Root URL must be absolute URL");
+      }
+      configureOAuth(lemonldapOAuthProviderSection);
     }
 
     boolean configureDexOAuthProvider =
