@@ -110,11 +110,7 @@ class InitOAuth implements InitStep {
         ui.yesno(
             isConfigured(casOAuthProviderSection), "Use CAS OAuth provider for Gerrit login ?");
     if (configureCasOAuthProvider && configureOAuth(casOAuthProviderSection)) {
-      String rootUrl = casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null);
-      requireNonNull(rootUrl);
-      if (!URI.create(rootUrl).isAbsolute()) {
-        throw new ProvisionException("Root URL must be absolute URL");
-      }
+      checkRootUrl(casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null));
       casOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
     }
 
@@ -131,21 +127,13 @@ class InitOAuth implements InitStep {
             isConfigured(gitlabOAuthProviderSection),
             "Use GitLab OAuth provider for Gerrit login ?");
     if (configureGitLabOAuthProvider && configureOAuth(gitlabOAuthProviderSection)) {
-      String rootUrl = gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null);
-      requireNonNull(rootUrl);
-      if (!URI.create(rootUrl).isAbsolute()) {
-        throw new ProvisionException("Root URL must be absolute URL");
-      }
+      checkRootUrl(gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null));
     }
 
     boolean configureLemonLDAPOAuthProvider =
         ui.yesno(true, "Use LemonLDAP OAuth provider for Gerrit login ?");
     if (configureLemonLDAPOAuthProvider) {
-      String rootUrl = lemonldapOAuthProviderSection.string("LemonLDAP Root URL", ROOT_URL, null);
-      requireNonNull(rootUrl);
-      if (!URI.create(rootUrl).isAbsolute()) {
-        throw new ProvisionException("Root URL must be absolute URL");
-      }
+      checkRootUrl(lemonldapOAuthProviderSection.string("LemonLDAP Root URL", ROOT_URL, null));
       configureOAuth(lemonldapOAuthProviderSection);
     }
 
@@ -153,11 +141,7 @@ class InitOAuth implements InitStep {
         ui.yesno(
             isConfigured(dexOAuthProviderSection), "Use Dex OAuth provider for Gerrit login ?");
     if (configureDexOAuthProvider && configureOAuth(dexOAuthProviderSection)) {
-      String rootUrl = dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null);
-      requireNonNull(rootUrl);
-      if (!URI.create(rootUrl).isAbsolute()) {
-        throw new ProvisionException("Root URL must be absolute URL");
-      }
+      checkRootUrl(dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null));
     }
 
     boolean configureKeycloakOAuthProvider =
@@ -165,11 +149,7 @@ class InitOAuth implements InitStep {
             isConfigured(keycloakOAuthProviderSection),
             "Use Keycloak OAuth provider for Gerrit login ?");
     if (configureKeycloakOAuthProvider && configureOAuth(keycloakOAuthProviderSection)) {
-      String rootUrl = keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null);
-      requireNonNull(rootUrl);
-      if (!URI.create(rootUrl).isAbsolute()) {
-        throw new ProvisionException("Root URL must be absolute URL");
-      }
+      checkRootUrl(keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null));
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
     }
 
@@ -212,6 +192,19 @@ class InitOAuth implements InitStep {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Check root URL parameter. It must be not null and it must be an absolute URI.
+   *
+   * @param rootUrl root URL
+   * @throws ProvisionException if rootUrl wasn't provided or is not absolute URI.
+   */
+  private static void checkRootUrl(String rootUrl) {
+    requireNonNull(rootUrl);
+    if (!URI.create(rootUrl).isAbsolute()) {
+      throw new ProvisionException("Root URL must be absolute URL");
+    }
   }
 
   @Override
