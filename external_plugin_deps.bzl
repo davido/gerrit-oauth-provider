@@ -22,8 +22,8 @@ def external_plugin_deps(omit_commons_codec = True):
     )
     maven_jar(
         name = "mockito",
-        artifact = "org.mockito:mockito-core:2.27.0",
-        sha1 = "835fc3283b481f4758b8ef464cd560c649c08b00",
+        artifact = "org.mockito:mockito-core:2.28.2",
+        sha1 = "91110215a8cb9b77a46e045ee758f77d79167cc0",
         deps = [
             "@byte-buddy//jar",
             "@byte-buddy-agent//jar",
