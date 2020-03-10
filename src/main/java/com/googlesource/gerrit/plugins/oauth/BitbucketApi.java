@@ -15,9 +15,6 @@
 package com.googlesource.gerrit.plugins.oauth;
 
 import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
-import com.github.scribejava.core.extractors.TokenExtractor;
-import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
 import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 
@@ -35,10 +32,5 @@ public class BitbucketApi extends DefaultApi20 {
   @Override
   public BearerSignature getBearerSignature() {
     return BearerSignatureURIQueryParameter.instance();
-  }
-
-  @Override
-  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
-    return OAuth2AccessTokenExtractor.instance();
   }
 }

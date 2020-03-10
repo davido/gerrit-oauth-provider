@@ -32,6 +32,7 @@ junit_tests(
     tags = ["oauth"],
     deps = [
         ":oauth__plugin_test_deps",
+        "@scribejava-core//jar",
     ],
 )
 
