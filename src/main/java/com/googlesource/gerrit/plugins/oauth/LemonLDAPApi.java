@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,37 @@ package com.googlesource.gerrit.plugins.oauth;
 import com.github.scribejava.core.builder.api.DefaultApi20;
 import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
 import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
+import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
+import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
-public class AirVantageApi extends DefaultApi20 {
+public class LemonLDAPApi extends DefaultApi20 {
+  private static final String AUTHORIZE_URL = "%s/oauth2/authorize";
+
+  private final String rootUrl;
+
+  public LemonLDAPApi(String rootUrl) {
+    this.rootUrl = rootUrl;
+  }
+
   @Override
   public String getAuthorizationBaseUrl() {
-    return "https://eu.airvantage.net/api/oauth/authorize";
+    return String.format(AUTHORIZE_URL, rootUrl);
   }
 
   @Override
   public String getAccessTokenEndpoint() {
-    return "https://eu.airvantage.net/api/oauth/token";
+    return String.format("%s/oauth2/token", rootUrl);
   }
 
+  // TODO(davido): Remove this override, if HttpBasicAuthentication
+  // scheme is supported.
+  @Override
+  public ClientAuthentication getClientAuthentication() {
+    return RequestBodyAuthenticationScheme.instance();
+  }
+
+  // TODO(davido): Remove this override, if BearerSignatureAuthorization
+  // request header field is supported.
   @Override
   public BearerSignature getBearerSignature() {
     return BearerSignatureURIQueryParameter.instance();

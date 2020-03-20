@@ -78,6 +78,13 @@ class HttpModule extends ServletModule {
           .to(GitLabOAuthService.class);
     }
 
+    cfg = cfgFactory.getFromGerritConfig(pluginName + LemonLDAPOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(LemonLDAPOAuthService.CONFIG_SUFFIX))
+          .to(LemonLDAPOAuthService.class);
+    }
+
     cfg = cfgFactory.getFromGerritConfig(pluginName + DexOAuthService.CONFIG_SUFFIX);
     if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
       bind(OAuthServiceProvider.class)
