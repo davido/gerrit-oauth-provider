@@ -131,7 +131,9 @@ class InitOAuth implements InitStep {
     }
 
     boolean configureLemonLDAPOAuthProvider =
-        ui.yesno(true, "Use LemonLDAP OAuth provider for Gerrit login ?");
+        ui.yesno(
+            isConfigured(lemonldapOAuthProviderSection),
+            "Use LemonLDAP OAuth provider for Gerrit login ?");
     if (configureLemonLDAPOAuthProvider) {
       checkRootUrl(lemonldapOAuthProviderSection.string("LemonLDAP Root URL", ROOT_URL, null));
       configureOAuth(lemonldapOAuthProviderSection);
