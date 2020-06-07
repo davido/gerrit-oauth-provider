@@ -14,6 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.gerrit.server.OutputFormat.JSON;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
@@ -159,7 +160,9 @@ class CasOAuthService implements OAuthServiceProvider {
     try {
       OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
       return new OAuthToken(
-          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+          accessToken.getAccessToken(),
+          nullToEmpty(accessToken.getTokenType()),
+          accessToken.getRawResponse());
     } catch (InterruptedException | ExecutionException | IOException e) {
       String msg = "Cannot retrieve access token";
       log.error(msg, e);
