@@ -12,11 +12,7 @@ load(
     "gerrit_api",
 )
 
-# Load release Plugin API
 gerrit_api()
-
-# Load snapshot Plugin API
-#gerrit_api(version = "3.1.xy-SNAPSHOT")
 
 load(":external_plugin_deps.bzl", "external_plugin_deps")
 
