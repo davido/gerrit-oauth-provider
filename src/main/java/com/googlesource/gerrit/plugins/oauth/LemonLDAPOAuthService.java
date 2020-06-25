@@ -62,7 +62,7 @@ public class LemonLDAPOAuthService implements OAuthServiceProvider {
     service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
-            .defaultScope("openid+email+profile")
+            .defaultScope("openid profile email")
             .callback(canonicalWebUrl + "oauth")
             .build(new LemonLDAPApi(rootUrl));
   }
