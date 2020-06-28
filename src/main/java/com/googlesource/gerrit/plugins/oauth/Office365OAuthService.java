@@ -80,6 +80,7 @@ class Office365OAuthService implements OAuthServiceProvider {
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
+    request.addHeader("Accept", "*/*");
 
     JsonElement userJson = null;
     try (Response response = service.execute(request)) {
