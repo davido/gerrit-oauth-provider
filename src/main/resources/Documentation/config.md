@@ -43,6 +43,11 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
   [plugin "@PLUGIN@-airvantage-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-phabricator-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    root-url = "<phabricator url>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -211,3 +216,9 @@ for an example.
 The client-id and client-secret for AirVantage OAuth can be obtained by registering
 a Client application.
 See [Getting Started](https://source.sierrawireless.com/airvantage/av/howto/cloud/gettingstarted_api).
+
+### Phabricator
+
+The client-id and client-secret for Phabricator can be obtained by registering a
+Client application.
+See [Using the Phabricator OAuth Server](https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/).

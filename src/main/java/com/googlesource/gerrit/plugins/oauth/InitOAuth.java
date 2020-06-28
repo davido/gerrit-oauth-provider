@@ -49,6 +49,7 @@ class InitOAuth implements InitStep {
   private final Section keycloakOAuthProviderSection;
   private final Section office365OAuthProviderSection;
   private final Section airVantageOAuthProviderSection;
+  private final Section phabricatorOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -75,6 +76,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + Office365OAuthService.CONFIG_SUFFIX);
     this.airVantageOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + AirVantageOAuthService.CONFIG_SUFFIX);
+    this.phabricatorOAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + PhabricatorOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -169,6 +172,14 @@ class InitOAuth implements InitStep {
             "Use AirVantage OAuth provider for Gerrit login ?");
     if (configureAirVantageOAuthProvider) {
       configureOAuth(airVantageOAuthProviderSection);
+    }
+
+    boolean configurePhabricatorOAuthProvider =
+        ui.yesno(
+            isConfigured(phabricatorOAuthProviderSection),
+            "Use Phabricator OAuth provider for Gerrit login ?");
+    if (configurePhabricatorOAuthProvider && configureOAuth(phabricatorOAuthProviderSection)) {
+      checkRootUrl(phabricatorOAuthProviderSection.string("Phabricator Root URL", ROOT_URL, null));
     }
   }
 

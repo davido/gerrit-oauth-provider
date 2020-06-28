@@ -112,5 +112,12 @@ class HttpModule extends ServletModule {
           .annotatedWith(Exports.named(AirVantageOAuthService.CONFIG_SUFFIX))
           .to(AirVantageOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + PhabricatorOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(PhabricatorOAuthService.CONFIG_SUFFIX))
+          .to(PhabricatorOAuthService.class);
+    }
   }
 }

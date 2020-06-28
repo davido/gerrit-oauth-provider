@@ -18,6 +18,7 @@ Supported OAuth providers:
 * [Keycloak](http://www.keycloak.org/)
 * [LemonLDAP::NG](https://lemonldap-ng.org)
 * [Office365](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols)
+* [Phabricator](https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/)
 
 See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
 
