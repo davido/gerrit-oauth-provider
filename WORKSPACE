@@ -12,7 +12,7 @@ load(
     "gerrit_api",
 )
 
-gerrit_api()
+gerrit_api(version = "3.3.0-SNAPSHOT")
 
 load(":external_plugin_deps.bzl", "external_plugin_deps")
 
