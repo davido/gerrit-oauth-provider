@@ -19,14 +19,21 @@ import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthenticati
 import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
 public class Office365Api extends DefaultApi20 {
+
+  private final String realm;
+
+  public Office365Api(String realm) {
+    this.realm = realm;
+  }
+
   @Override
   public String getAccessTokenEndpoint() {
-    return "https://login.microsoftonline.com/organizations/oauth2/v2.0/token";
+    return "https://login.microsoftonline.com/" + realm + "/oauth2/v2.0/token";
   }
 
   @Override
   public String getAuthorizationBaseUrl() {
-    return "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize";
+    return "https://login.microsoftonline.com/" + realm + "/oauth2/v2.0/authorize";
   }
 
   @Override

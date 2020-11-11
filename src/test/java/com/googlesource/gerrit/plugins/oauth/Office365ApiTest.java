@@ -25,7 +25,7 @@ public class Office365ApiTest {
 
   @Before
   public void setUp() {
-    api = new Office365Api();
+    api = new Office365Api("");
   }
 
   @Test

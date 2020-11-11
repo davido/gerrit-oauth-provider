@@ -62,12 +62,13 @@ class Office365OAuthService implements OAuthServiceProvider {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
+    String realm = cfg.getString(InitOAuth.REALM, "organizations");
     this.service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
             .defaultScope(SCOPE)
-            .build(new Office365Api());
+            .build(new Office365Api(realm));
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
