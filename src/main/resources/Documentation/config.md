@@ -48,6 +48,11 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     root-url = "<phabricator url>"
+
+  [plugin "@PLUGIN@-office365-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    tenant = "<tenant (optional defaults to organizations if not set)>"
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -222,3 +227,22 @@ See [Getting Started](https://source.sierrawireless.com/airvantage/av/howto/clou
 The client-id and client-secret for Phabricator can be obtained by registering a
 Client application.
 See [Using the Phabricator OAuth Server](https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/).
+
+### Office365
+The client-id and client-secret for Office365/Azure can be obtained by registering a new application,
+see [OAuth 2.0 and OpenID Connect protocols on Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols).
+
+####Username
+By default Office365 OAuth will not set a username (used for ssh) and the user can choose one from the web ui
+(needed before using ssh). To automatically set the user part from the email the option *use-email-as-username*
+can be used.
+```
+plugin.gerrit-oauth-provider-office365-oauth.use-email-as-username = true
+```
+
+####Tenant
+By default, the Gerrit OAuth plugin is using the tenant `organizations`. A specific tenant can be set
+by using the option `tenant`.
+```
+plugin.gerrit-oauth-provider-office365-oauth.tenant = <tenant to use>
+```

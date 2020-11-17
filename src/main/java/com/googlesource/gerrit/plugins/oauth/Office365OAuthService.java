@@ -53,6 +53,7 @@ class Office365OAuthService implements OAuthServiceProvider {
   private final OAuth20Service service;
   private final String canonicalWebUrl;
   private final boolean useEmailAsUsername;
+  private final String tenant;
 
   @Inject
   Office365OAuthService(
@@ -62,12 +63,13 @@ class Office365OAuthService implements OAuthServiceProvider {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
+    this.tenant = cfg.getString(InitOAuth.TENANT, Office365Api.DEFAULT_TENANT);
     this.service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
             .defaultScope(SCOPE)
-            .build(new Office365Api());
+            .build(new Office365Api(tenant));
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);

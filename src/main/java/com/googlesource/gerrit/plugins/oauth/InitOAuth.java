@@ -34,6 +34,7 @@ class InitOAuth implements InitStep {
   static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
   static final String ROOT_URL = "root-url";
   static final String REALM = "realm";
+  static final String TENANT = "tenant";
   static final String SERVICE_NAME = "service-name";
   static String FIX_LEGACY_USER_ID_QUESTION = "Fix legacy user id, without oauth provider prefix?";
 
