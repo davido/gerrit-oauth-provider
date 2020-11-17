@@ -241,14 +241,13 @@ plugin.gerrit-oauth-provider-office365-oauth.use-email-as-username = true
 ```
 
 ####Tenant
-By default, the Gerrit OAuth plugin is using the tenant `organizations`. A specific tenant can be set
-by using the option `tenant`.
+The Gerrit OAuth plugin is default set to use the tenant `organizations` but a specific tenant can be used by 
+the option `tenant`. If a tenant other than `common`, `organizations` or `consumers` is used then the tokens will be
+validated that they are originating from the same tenant that is configured in the Gerrit OAuth plugin.
+See [https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc#fetch-the-openid-connect-metadata-document](Microsoft identity platform and OpenID Connect protocol)
 ```
 plugin.gerrit-oauth-provider-office365-oauth.tenant = <tenant to use>
 ```
 
-If a specific tenant is set Gerrit OAuth plugin will inspect the token and validate that this is
-originating from the Azure AD with the tenant specified in the option.
-
-By default, all tokens will be checked that they contain the client_id set
+Regardless of tenant all tokens will be checked that they contain the client_id set
 in the Gerrit OAuth plugin.

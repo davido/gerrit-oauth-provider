@@ -22,6 +22,7 @@ gerrit_plugin(
     deps = [
         "@commons-codec//jar:neverlink",
         "@jackson-databind//jar",
+        "@scribejava-apis//jar",
         "@scribejava-core//jar",
     ],
 )
@@ -32,6 +33,7 @@ junit_tests(
     tags = ["oauth"],
     deps = [
         ":oauth__plugin_test_deps",
+        "@scribejava-apis//jar",
         "@scribejava-core//jar",
     ],
 )

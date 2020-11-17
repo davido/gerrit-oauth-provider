@@ -16,16 +16,17 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.github.scribejava.apis.MicrosoftAzureActiveDirectory20Api;
 import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
 import org.junit.Before;
 import org.junit.Test;
 
 public class Office365ApiTest {
-  private Office365Api api;
+  private MicrosoftAzureActiveDirectory20Api api;
 
   @Before
   public void setUp() {
-    api = new Office365Api();
+    api = MicrosoftAzureActiveDirectory20Api.instance();
   }
 
   @Test

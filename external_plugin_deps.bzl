@@ -2,10 +2,16 @@ load("//tools/bzl:maven_jar.bzl", "maven_jar")
 
 def external_plugin_deps(omit_commons_codec = True):
     JACKSON_VERS = "2.10.2"
+    SCRIBEJAVA_VERS = "6.9.0"
     maven_jar(
         name = "scribejava-core",
-        artifact = "com.github.scribejava:scribejava-core:6.9.0",
+        artifact = "com.github.scribejava:scribejava-core:" + SCRIBEJAVA_VERS,
         sha1 = "ed761f450d8382f75787e8fee9ae52e7ec768747",
+    )
+    maven_jar(
+        name = "scribejava-apis",
+        artifact = "com.github.scribejava:scribejava-apis:" + SCRIBEJAVA_VERS,
+        sha1 = "a374c7a36533e58e53b42b584a8b3751ab1e13c4",
     )
     maven_jar(
         name = "jackson-annotations",
