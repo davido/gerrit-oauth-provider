@@ -246,3 +246,9 @@ by using the option `tenant`.
 ```
 plugin.gerrit-oauth-provider-office365-oauth.tenant = <tenant to use>
 ```
+
+If a specific tenant is set Gerrit OAuth plugin will inspect the token and validate that this is
+originating from the Azure AD with the tenant specified in the option.
+
+By default, all tokens will be checked that they contain the client_id set
+in the Gerrit OAuth plugin.

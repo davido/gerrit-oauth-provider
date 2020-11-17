@@ -17,6 +17,7 @@ package com.googlesource.gerrit.plugins.oauth;
 import static com.google.gerrit.json.OutputFormat.JSON;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.exceptions.OAuthException;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
@@ -31,12 +32,15 @@ import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -51,9 +55,11 @@ class Office365OAuthService implements OAuthServiceProvider {
   private static final String SCOPE =
       "openid offline_access https://graph.microsoft.com/user.readbasic.all";
   private final OAuth20Service service;
+  private final Gson gson;
   private final String canonicalWebUrl;
   private final boolean useEmailAsUsername;
   private final String tenant;
+  private final String clientId;
 
   @Inject
   Office365OAuthService(
@@ -64,12 +70,14 @@ class Office365OAuthService implements OAuthServiceProvider {
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
     this.tenant = cfg.getString(InitOAuth.TENANT, Office365Api.DEFAULT_TENANT);
+    this.clientId = cfg.getString(InitOAuth.CLIENT_ID);
     this.service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
             .defaultScope(SCOPE)
             .build(new Office365Api(tenant));
+    this.gson = JSON.newGson();
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
@@ -79,6 +87,52 @@ class Office365OAuthService implements OAuthServiceProvider {
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
+    // ?: Have we set a custom tenant, if so we should validate that the token is issued by the same
+    // tenant as
+    // we have set.
+    if (!tenant.equals(Office365Api.DEFAULT_TENANT)) {
+      // -> Yes, we are using a non-default tenant so we should validate that is delegated from the
+      // same one that we
+      // have set.
+      String tid = getTokenJson(token.getToken()).get("tid").getAsString();
+
+      // ?: Verify that this token has the same tenant as we are currently using
+      if (!tenant.equals(tid)) {
+        // -> No, this tenant does not equals the one in the token. So we should stop processing
+        log.warn(
+            String.format(
+                "The token was issued by the tenant [%s] while we are set to use [%s]",
+                tid, tenant));
+        // Return null so the user will be shown Unauthorized.
+        return null;
+      }
+    }
+
+    // Due to scribejava does not expose the id_token we need to do this a bit convoluted way to
+    // extract this our self
+    // see <a href="https://github.com/scribejava/scribejava/issues/968">Obtaining id_token from
+    // access_token</a> for
+    // the scribejava issue on this.
+    String rawToken = token.getRaw();
+    JsonObject jwtJson = gson.fromJson(rawToken, JsonObject.class);
+    String idTokenBase64 = jwtJson.get("id_token").getAsString();
+    String aud = getTokenJson(idTokenBase64).get("aud").getAsString();
+
+    // ?: Does this token have the same clientId set in the 'aud' part of the id_token as we are
+    // using.
+    // If not we should reject it
+    // see <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens">id
+    // tokens Payload claims></a>
+    // for information on the aud claim.
+    if (!clientId.equals(aud)) {
+      log.warn(
+          String.format(
+              "The id_token had aud [%s] while we expected it to be equal to the clientId [%s]",
+              aud, clientId));
+      // Return null so the user will be shown Unauthorized.
+      return null;
+    }
+
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
@@ -150,5 +204,19 @@ class Office365OAuthService implements OAuthServiceProvider {
   @Override
   public String getName() {
     return "Office365 OAuth2";
+  }
+
+  /** Get the {@link JsonObject} of a given token. */
+  private JsonObject getTokenJson(String tokenBase64) {
+    String[] tokenParts = tokenBase64.split("\\.");
+    if (tokenParts.length != 3) {
+      throw new OAuthException("Token does not contain expected number of parts");
+    }
+
+    // Extract the payload part from the JWT token (header.payload.signature) by retrieving
+    // tokenParts[1].
+    return gson.fromJson(
+        new String(Base64.getDecoder().decode(tokenParts[1]), StandardCharsets.UTF_8),
+        JsonObject.class);
   }
 }
