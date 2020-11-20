@@ -35,6 +35,7 @@ class InitOAuth implements InitStep {
   static final String ROOT_URL = "root-url";
   static final String REALM = "realm";
   static final String TENANT = "tenant";
+  static final String LINK_TO_EXISTING_OFFICE365_ACCOUNT = "link-to-existing-office365-accounts";
   static final String SERVICE_NAME = "service-name";
   static String FIX_LEGACY_USER_ID_QUESTION = "Fix legacy user id, without oauth provider prefix?";
 
@@ -49,6 +50,7 @@ class InitOAuth implements InitStep {
   private final Section dexOAuthProviderSection;
   private final Section keycloakOAuthProviderSection;
   private final Section office365OAuthProviderSection;
+  private final Section azureActiveDirectoryAuthProviderSection;
   private final Section airVantageOAuthProviderSection;
   private final Section phabricatorOAuthProviderSection;
 
@@ -74,7 +76,9 @@ class InitOAuth implements InitStep {
     this.keycloakOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + KeycloakOAuthService.CONFIG_SUFFIX);
     this.office365OAuthProviderSection =
-        sections.get(PLUGIN_SECTION, pluginName + Office365OAuthService.CONFIG_SUFFIX);
+        sections.get(PLUGIN_SECTION, pluginName + AzureActiveDirectoryService.CONFIG_SUFFIX_LEGACY);
+    this.azureActiveDirectoryAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + AzureActiveDirectoryService.CONFIG_SUFFIX);
     this.airVantageOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + AirVantageOAuthService.CONFIG_SUFFIX);
     this.phabricatorOAuthProviderSection =
@@ -159,12 +163,28 @@ class InitOAuth implements InitStep {
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
     }
 
-    boolean configureOffice365OAuthProvider =
-        ui.yesno(
-            isConfigured(office365OAuthProviderSection),
-            "Use Office365 OAuth provider for Gerrit login ?");
-    if (configureOffice365OAuthProvider) {
-      configureOAuth(office365OAuthProviderSection);
+    // ?: Are there legacy office365 already configured on the system?
+    if (isConfigured(office365OAuthProviderSection)) {
+      // -> Yes, this system has already configured the old legacy office365.
+      boolean configureOffice365OAuthProvider =
+          ui.yesno(
+              isConfigured(office365OAuthProviderSection),
+              "Use Office365 OAuth provider for Gerrit login ?");
+      if (configureOffice365OAuthProvider) {
+        configureOAuth(office365OAuthProviderSection);
+      }
+    }
+    // E-> No, we either are setting up on an new system or using the new azure config
+    else {
+      boolean configureAzureActiveDirectoryAuthProvider =
+          ui.yesno(
+              isConfigured(azureActiveDirectoryAuthProviderSection),
+              "Use Azure OAuth provider for Gerrit login ?");
+      if (configureAzureActiveDirectoryAuthProvider) {
+        configureOAuth(azureActiveDirectoryAuthProviderSection);
+        azureActiveDirectoryAuthProviderSection.string(
+            "Tenant", TENANT, AzureActiveDirectoryService.DEFAULT_TENANT);
+      }
     }
 
     boolean configureAirVantageOAuthProvider =

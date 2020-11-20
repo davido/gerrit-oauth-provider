@@ -20,6 +20,7 @@ import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
 import com.google.inject.Inject;
+import com.google.inject.ProvisionException;
 import com.google.inject.servlet.ServletModule;
 
 class HttpModule extends ServletModule {
@@ -99,11 +100,28 @@ class HttpModule extends ServletModule {
           .to(KeycloakOAuthService.class);
     }
 
-    cfg = cfgFactory.getFromGerritConfig(pluginName + Office365OAuthService.CONFIG_SUFFIX);
+    boolean office365LegacyProviderBound = false;
+    cfg =
+        cfgFactory.getFromGerritConfig(
+            pluginName + AzureActiveDirectoryService.CONFIG_SUFFIX_LEGACY);
     if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      office365LegacyProviderBound = true;
       bind(OAuthServiceProvider.class)
-          .annotatedWith(Exports.named(Office365OAuthService.CONFIG_SUFFIX))
-          .to(Office365OAuthService.class);
+          .annotatedWith(Exports.named(AzureActiveDirectoryService.CONFIG_SUFFIX))
+          .to(AzureActiveDirectoryService.class);
+    }
+    cfg = cfgFactory.getFromGerritConfig(pluginName + AzureActiveDirectoryService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      // ?: Check if the legacy Office365 is already bound, we can only have one of these bound at
+      // one time
+      if (office365LegacyProviderBound) {
+        // -> Yes, the legacy Office365 is already bound and we are trying to bind the
+        // AzureActiveDirectoryService.CONFIG_SUFFIX at the same time.
+        throw new ProvisionException("Legacy Office365 OAuth provider is already bound!");
+      }
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(AzureActiveDirectoryService.CONFIG_SUFFIX))
+          .to(AzureActiveDirectoryService.class);
     }
 
     cfg = cfgFactory.getFromGerritConfig(pluginName + AirVantageOAuthService.CONFIG_SUFFIX);

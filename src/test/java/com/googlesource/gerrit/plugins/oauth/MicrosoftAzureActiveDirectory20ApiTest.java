@@ -21,7 +21,7 @@ import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
 import org.junit.Before;
 import org.junit.Test;
 
-public class Office365ApiTest {
+public class MicrosoftAzureActiveDirectory20ApiTest {
   private MicrosoftAzureActiveDirectory20Api api;
 
   @Before

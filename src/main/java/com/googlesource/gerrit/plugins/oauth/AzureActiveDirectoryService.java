@@ -49,14 +49,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-class Office365OAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(Office365OAuthService.class);
-  static final String CONFIG_SUFFIX = "-office365-oauth";
+class AzureActiveDirectoryService implements OAuthServiceProvider {
+  private static final Logger log = LoggerFactory.getLogger(AzureActiveDirectoryService.class);
+  static final String CONFIG_SUFFIX_LEGACY = "-office365-oauth";
+  static final String CONFIG_SUFFIX = "-azure-oauth";
+  private static final String AZURE_PROVIDER_PREFIX = "azure-oauth:";
   private static final String OFFICE365_PROVIDER_PREFIX = "office365-oauth:";
   private static final String PROTECTED_RESOURCE_URL = "https://graph.microsoft.com/v1.0/me";
   private static final String SCOPE =
       "openid offline_access https://graph.microsoft.com/user.readbasic.all";
-  private static final String DEFAULT_TENANT = "organizations";
+  public static final String DEFAULT_TENANT = "organizations";
   private static final ImmutableSet<String> TENANTS_WITHOUT_VALIDATION =
       ImmutableSet.<String>builder().add(DEFAULT_TENANT).add("common").add("consumers").build();
   private final OAuth20Service service;
@@ -65,13 +67,26 @@ class Office365OAuthService implements OAuthServiceProvider {
   private final boolean useEmailAsUsername;
   private final String tenant;
   private final String clientId;
+  private String providerPrefix;
+  private final boolean linkOffice365Id;
 
   @Inject
-  Office365OAuthService(
+  AzureActiveDirectoryService(
       PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
+    providerPrefix = AZURE_PROVIDER_PREFIX;
+
+    // ?: Did we find the client_id with the CONFIG_SUFFIX
+    if (cfg.getString(InitOAuth.CLIENT_ID) == null) {
+      // -> No, we did not find the client_id in the azure config so we should try the old legacy
+      // office365 section
+      cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX_LEGACY);
+      // We must also use the new provider prefix
+      providerPrefix = OFFICE365_PROVIDER_PREFIX;
+    }
+    this.linkOffice365Id = cfg.getBoolean(InitOAuth.LINK_TO_EXISTING_OFFICE365_ACCOUNT, false);
     this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
     this.tenant = cfg.getString(InitOAuth.TENANT, DEFAULT_TENANT);
@@ -167,12 +182,13 @@ class Office365OAuthService implements OAuthServiceProvider {
         if (useEmailAsUsername && !email.isJsonNull()) {
           login = email.getAsString().split("@")[0];
         }
+
         return new OAuthUserInfo(
-            OFFICE365_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
+            providerPrefix + id.getAsString() /*externalId*/,
             login /*username*/,
             email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
             name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
-            null);
+            linkOffice365Id ? OFFICE365_PROVIDER_PREFIX + id.getAsString() : null);
       }
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException("Cannot retrieve user info resource", e);
