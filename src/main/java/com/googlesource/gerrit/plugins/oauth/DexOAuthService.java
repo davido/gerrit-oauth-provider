@@ -36,7 +36,9 @@ import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -76,11 +78,11 @@ public class DexOAuthService implements OAuthServiceProvider {
             .build(new DexApi(rootUrl));
   }
 
-  private String parseJwt(String input) {
+  private String parseJwt(String input) throws UnsupportedEncodingException {
     String[] parts = input.split("\\.");
     Preconditions.checkState(parts.length == 3);
     Preconditions.checkNotNull(parts[1]);
-    return new String(Base64.decodeBase64(parts[1]));
+    return new String(Base64.decodeBase64(parts[1]), StandardCharsets.UTF_8.name());
   }
 
   @Override
@@ -89,8 +91,17 @@ public class DexOAuthService implements OAuthServiceProvider {
     JsonObject tokenObject = tokenJson.getAsJsonObject();
     JsonElement id_token = tokenObject.get("id_token");
 
-    JsonElement claimJson =
-        JSON.newGson().fromJson(parseJwt(id_token.getAsString()), JsonElement.class);
+    String jwt;
+    try {
+      jwt = parseJwt(id_token.getAsString());
+    } catch (UnsupportedEncodingException e) {
+      throw new IOException(
+          String.format(
+              "%s support is required to interact with JWTs", StandardCharsets.UTF_8.name()),
+          e);
+    }
+
+    JsonElement claimJson = JSON.newGson().fromJson(jwt, JsonElement.class);
 
     // Dex does not support basic profile currently (2017-09), extracting info
     // from access token claim
