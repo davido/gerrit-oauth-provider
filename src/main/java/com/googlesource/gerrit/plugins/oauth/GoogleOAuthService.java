@@ -154,13 +154,21 @@ class GoogleOAuthService implements OAuthServiceProvider {
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
   }
 
-  private JsonObject retrieveJWTToken(OAuthToken token) {
+  private JsonObject retrieveJWTToken(OAuthToken token) throws IOException {
     JsonElement idToken = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
     if (idToken != null && idToken.isJsonObject()) {
       JsonObject idTokenObj = idToken.getAsJsonObject();
       JsonElement idTokenElement = idTokenObj.get("id_token");
       if (idTokenElement != null && !idTokenElement.isJsonNull()) {
-        String payload = decodePayload(idTokenElement.getAsString());
+        String payload;
+        try {
+          payload = decodePayload(idTokenElement.getAsString());
+        } catch (UnsupportedEncodingException e) {
+          throw new IOException(
+              String.format(
+                  "%s support is required to interact with JWTs", StandardCharsets.UTF_8.name()),
+              e);
+        }
         if (!Strings.isNullOrEmpty(payload)) {
           JsonElement tokenJsonElement = JSON.newGson().fromJson(payload, JsonElement.class);
           if (tokenJsonElement.isJsonObject()) {
@@ -189,13 +197,13 @@ class GoogleOAuthService implements OAuthServiceProvider {
    * @param idToken Base64 encoded tripple, separated with dot
    * @return openid_id part of payload, when contained, null otherwise
    */
-  private static String decodePayload(String idToken) {
+  private static String decodePayload(String idToken) throws UnsupportedEncodingException {
     Preconditions.checkNotNull(idToken);
     String[] jwtParts = idToken.split("\\.");
     Preconditions.checkState(jwtParts.length == 3);
     String payloadStr = jwtParts[1];
     Preconditions.checkNotNull(payloadStr);
-    return new String(Base64.decodeBase64(payloadStr));
+    return new String(Base64.decodeBase64(payloadStr), StandardCharsets.UTF_8.name());
   }
 
   @Override
