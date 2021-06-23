@@ -32,6 +32,7 @@ class InitOAuth implements InitStep {
   static final String FIX_LEGACY_USER_ID = "fix-legacy-user-id";
   static final String DOMAIN = "domain";
   static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
+  static final String USE_PREFERRED_USERNAME = "use-preferred-username";
   static final String ROOT_URL = "root-url";
   static final String REALM = "realm";
   static final String TENANT = "tenant";

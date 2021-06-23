@@ -61,6 +61,13 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     tenant = "<tenant (optional defaults to organizations if not set)>"
     link-to-existing-office365-accounts = true #Optional, if set will try to link old account with the @PLUGIN@-office365-oauth naming
 
+  [plugin "@PLUGIN@-keycloak-oauth"]
+    root-url = "<root url>" # for example, https://signon.example.com
+    realm = "<realm>"
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    use-preferred-username = true # Optional, if false will not send preferred_username from Keycloak to leave username unset
+
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -274,3 +281,14 @@ plugin.gerrit-oauth-provider-azure-oauth.link-to-existing-office365-accounts = t
 This will try to link the old `office365-oauth` external id to the new `azure-oauth` external id automatically.
 Another option is to migrate these manually offline, see [External IDs](https://gerrit-review.googlesource.com/Documentation/config-accounts.html#external-ids)
 for more information.
+
+### Keycloak
+
+When setting up a client in Keycloak for Gerrit, enter a value for the *Client ID* and ensure you choose the `openid-connect`
+protocol and select the `confidential` access type. Once you click save, a *Credentials* tab will appear where you will find
+the Secret.
+
+The root URL will the protocol and hostname of your Keycloak instance (for example, https://signon.example.com).
+
+You can optionally set `use-preferred-username = false` if you would prefer to not have the `preferred_username`
+token be automatically set as the users username, and instead let users choose their own usernames.

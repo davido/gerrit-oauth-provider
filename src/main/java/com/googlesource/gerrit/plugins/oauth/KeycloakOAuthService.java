@@ -51,6 +51,7 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
   private static final String KEYCLOAK_PROVIDER_PREFIX = "keycloak-oauth:";
   private final OAuth20Service service;
   private final String serviceName;
+  private final boolean usePreferredUsername;
 
   @Inject
   KeycloakOAuthService(
@@ -66,6 +67,7 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     }
     String realm = cfg.getString(InitOAuth.REALM);
     serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Keycloak OAuth2");
+    usePreferredUsername = cfg.getBoolean(InitOAuth.USE_PREFERRED_USERNAME, true);
 
     service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
@@ -115,12 +117,17 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     if (nameElement == null || nameElement.isJsonNull()) {
       throw new IOException("Response doesn't contain name field");
     }
-    String username = usernameElement.getAsString();
+    String usernameAsString = usernameElement.getAsString();
+    String username = null;
+    if (usePreferredUsername) {
+      username = usernameAsString;
+    }
+    String externalId = KEYCLOAK_PROVIDER_PREFIX + usernameAsString;
     String email = emailElement.getAsString();
     String name = nameElement.getAsString();
 
     return new OAuthUserInfo(
-        KEYCLOAK_PROVIDER_PREFIX + username /*externalId*/,
+        externalId /*externalId*/,
         username /*username*/,
         email /*email*/,
         name /*displayName*/,
