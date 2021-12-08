@@ -26,6 +26,11 @@ def external_plugin_deps(omit_commons_codec = True):
             "@jackson-annotations//jar",
         ],
     )
+    maven_jar(
+        name = "jackson-core",
+        artifact = "com.fasterxml.jackson.core:jackson-core:" + JACKSON_VERS,
+        sha1 = "73d4322a6bda684f676a2b5fe918361c4e5c7cca",
+    )
     if not omit_commons_codec:
         maven_jar(
             name = "commons-codec",

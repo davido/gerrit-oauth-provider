@@ -21,6 +21,7 @@ gerrit_plugin(
     resources = glob(["src/main/resources/**/*"]),
     deps = [
         "@commons-codec//jar:neverlink",
+        "@jackson-core//jar",
         "@jackson-databind//jar",
         "@scribejava-apis//jar",
         "@scribejava-core//jar",
