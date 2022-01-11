@@ -236,7 +236,7 @@ class AzureActiveDirectoryService implements OAuthServiceProvider {
     // Extract the payload part from the JWT token (header.payload.signature) by retrieving
     // tokenParts[1].
     return gson.fromJson(
-        new String(Base64.getDecoder().decode(tokenParts[1]), StandardCharsets.UTF_8),
+        new String(Base64.getUrlDecoder().decode(tokenParts[1]), StandardCharsets.UTF_8),
         JsonObject.class);
   }
 }
