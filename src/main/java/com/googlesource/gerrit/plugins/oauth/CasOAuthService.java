@@ -14,8 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import static com.google.gerrit.json.OutputFormat.JSON;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.gerrit.json.OutputFormat.JSON;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth2AccessToken;
@@ -129,11 +129,17 @@ class CasOAuthService implements OAuthServiceProvider {
           JsonObject obj = elem.getAsJsonObject();
 
           String property = getStringElement(obj, "email");
-          if (property != null) email = property;
+          if (property != null) {
+            email = property;
+          }
           property = getStringElement(obj, "name");
-          if (property != null) name = property;
+          if (property != null) {
+            name = property;
+          }
           property = getStringElement(obj, "login");
-          if (property != null) login = property;
+          if (property != null) {
+            login = property;
+          }
         }
       }
 
@@ -150,7 +156,9 @@ class CasOAuthService implements OAuthServiceProvider {
 
   private String getStringElement(JsonObject o, String name) {
     JsonElement elem = o.get(name);
-    if (elem == null || elem.isJsonNull()) return null;
+    if (elem == null || elem.isJsonNull()) {
+      return null;
+    }
 
     return elem.getAsString();
   }
