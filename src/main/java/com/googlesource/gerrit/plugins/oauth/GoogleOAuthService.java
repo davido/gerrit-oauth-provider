@@ -221,20 +221,21 @@ class GoogleOAuthService implements OAuthServiceProvider {
 
   @Override
   public String getAuthorizationUrl() {
-    String url = service.getAuthorizationUrl();
+    StringBuilder urlBuilder = new StringBuilder(service.getAuthorizationUrl());
     try {
       if (domains.size() == 1) {
-        url += "&hd=" + URLEncoder.encode(domains.get(0), StandardCharsets.UTF_8.name());
+        urlBuilder.append("&hd=");
+        urlBuilder.append(URLEncoder.encode(domains.get(0), StandardCharsets.UTF_8.name()));
       } else if (domains.size() > 1) {
-        url += "&hd=*";
+        urlBuilder.append("&hd=*");
       }
     } catch (UnsupportedEncodingException e) {
       throw new IllegalArgumentException(e);
     }
     if (log.isDebugEnabled()) {
-      log.debug("OAuth2: authorization URL={}", url);
+      log.debug("OAuth2: authorization URL={}", urlBuilder);
     }
-    return url;
+    return urlBuilder.toString();
   }
 
   @Override
