@@ -14,6 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.gerrit.json.OutputFormat.JSON;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
@@ -128,11 +129,17 @@ class CasOAuthService implements OAuthServiceProvider {
           JsonObject obj = elem.getAsJsonObject();
 
           String property = getStringElement(obj, "email");
-          if (property != null) email = property;
+          if (property != null) {
+            email = property;
+          }
           property = getStringElement(obj, "name");
-          if (property != null) name = property;
+          if (property != null) {
+            name = property;
+          }
           property = getStringElement(obj, "login");
-          if (property != null) login = property;
+          if (property != null) {
+            login = property;
+          }
         }
       }
 
@@ -149,7 +156,9 @@ class CasOAuthService implements OAuthServiceProvider {
 
   private String getStringElement(JsonObject o, String name) {
     JsonElement elem = o.get(name);
-    if (elem == null || elem.isJsonNull()) return null;
+    if (elem == null || elem.isJsonNull()) {
+      return null;
+    }
 
     return elem.getAsString();
   }
@@ -159,7 +168,9 @@ class CasOAuthService implements OAuthServiceProvider {
     try {
       OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
       return new OAuthToken(
-          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
+          accessToken.getAccessToken(),
+          nullToEmpty(accessToken.getTokenType()),
+          accessToken.getRawResponse());
     } catch (InterruptedException | ExecutionException | IOException e) {
       String msg = "Cannot retrieve access token";
       log.error(msg, e);

@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Android Open Source Project
+// Copyright (C) 2018 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@ package com.googlesource.gerrit.plugins.oauth;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
 
+import com.github.scribejava.apis.MicrosoftAzureActiveDirectory20Api;
 import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.exceptions.OAuthException;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
@@ -33,71 +34,128 @@ import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gerrit.server.config.PluginConfigFactory;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-class GoogleOAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(GoogleOAuthService.class);
-  static final String CONFIG_SUFFIX = "-google-oauth";
-  private static final String GOOGLE_PROVIDER_PREFIX = "google-oauth:";
-  private static final String PROTECTED_RESOURCE_URL =
-      "https://www.googleapis.com/oauth2/v2/userinfo";
-  private static final String SCOPE = "email profile";
+class AzureActiveDirectoryService implements OAuthServiceProvider {
+  private static final Logger log = LoggerFactory.getLogger(AzureActiveDirectoryService.class);
+  static final String CONFIG_SUFFIX_LEGACY = "-office365-oauth";
+  static final String CONFIG_SUFFIX = "-azure-oauth";
+  private static final String AZURE_PROVIDER_PREFIX = "azure-oauth:";
+  private static final String OFFICE365_PROVIDER_PREFIX = "office365-oauth:";
+  private static final String PROTECTED_RESOURCE_URL = "https://graph.microsoft.com/v1.0/me";
+  private static final String SCOPE =
+      "openid offline_access https://graph.microsoft.com/user.readbasic.all";
+  public static final String DEFAULT_TENANT = "organizations";
+  private static final ImmutableSet<String> TENANTS_WITHOUT_VALIDATION =
+      ImmutableSet.<String>builder().add(DEFAULT_TENANT).add("common").add("consumers").build();
   private final OAuth20Service service;
+  private final Gson gson;
   private final String canonicalWebUrl;
-  private final List<String> domains;
   private final boolean useEmailAsUsername;
-  private final boolean fixLegacyUserId;
+  private final String tenant;
+  private final String clientId;
+  private String providerPrefix;
+  private final boolean linkOffice365Id;
 
   @Inject
-  GoogleOAuthService(
+  AzureActiveDirectoryService(
       PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
-    this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
-    if (cfg.getBoolean(InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT, false)) {
-      log.warn(
-          String.format(
-              "The support for: %s is disconinued", InitOAuth.LINK_TO_EXISTING_OPENID_ACCOUNT));
+    providerPrefix = AZURE_PROVIDER_PREFIX;
+
+    // ?: Did we find the client_id with the CONFIG_SUFFIX
+    if (cfg.getString(InitOAuth.CLIENT_ID) == null) {
+      // -> No, we did not find the client_id in the azure config so we should try the old legacy
+      // office365 section
+      cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX_LEGACY);
+      // We must also use the new provider prefix
+      providerPrefix = OFFICE365_PROVIDER_PREFIX;
     }
-    fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
-    this.domains = Arrays.asList(cfg.getStringList(InitOAuth.DOMAIN));
+    this.linkOffice365Id = cfg.getBoolean(InitOAuth.LINK_TO_EXISTING_OFFICE365_ACCOUNT, false);
+    this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
     this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
+    this.tenant = cfg.getString(InitOAuth.TENANT, DEFAULT_TENANT);
+    this.clientId = cfg.getString(InitOAuth.CLIENT_ID);
     this.service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
             .defaultScope(SCOPE)
-            .build(new Google2Api());
+            .build(MicrosoftAzureActiveDirectory20Api.custom(tenant));
+    this.gson = JSON.newGson();
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
       log.debug("OAuth2: scope={}", SCOPE);
-      log.debug("OAuth2: domains={}", domains);
       log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
+    // ?: Have we set a custom tenant and is this a tenant other than the one set in
+    // TENANTS_WITHOUT_VALIDATION
+    if (!TENANTS_WITHOUT_VALIDATION.contains(tenant)) {
+      // -> Yes, we are using a tenant that should be validated, so verify that is issued for the
+      // same one that we
+      // have set.
+      String tid = getTokenJson(token.getToken()).get("tid").getAsString();
+
+      // ?: Verify that this token has the same tenant as we are currently using
+      if (!tenant.equals(tid)) {
+        // -> No, this tenant does not equals the one in the token. So we should stop processing
+        log.warn(
+            String.format(
+                "The token was issued by the tenant [%s] while we are set to use [%s]",
+                tid, tenant));
+        // Return null so the user will be shown Unauthorized.
+        return null;
+      }
+    }
+
+    // Due to scribejava does not expose the id_token we need to do this a bit convoluted way to
+    // extract this our self
+    // see <a href="https://github.com/scribejava/scribejava/issues/968">Obtaining id_token from
+    // access_token</a> for
+    // the scribejava issue on this.
+    String rawToken = token.getRaw();
+    JsonObject jwtJson = gson.fromJson(rawToken, JsonObject.class);
+    String idTokenBase64 = jwtJson.get("id_token").getAsString();
+    String aud = getTokenJson(idTokenBase64).get("aud").getAsString();
+
+    // ?: Does this token have the same clientId set in the 'aud' part of the id_token as we are
+    // using.
+    // If not we should reject it
+    // see <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens">id
+    // tokens Payload claims></a>
+    // for information on the aud claim.
+    if (!clientId.equals(aud)) {
+      log.warn(
+          String.format(
+              "The id_token had aud [%s] while we expected it to be equal to the clientId [%s]",
+              aud, clientId));
+      // Return null so the user will be shown Unauthorized.
+      return null;
+    }
+
     OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
     OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
+    request.addHeader("Accept", "*/*");
 
     JsonElement userJson = null;
     try (Response response = service.execute(request)) {
@@ -117,93 +175,26 @@ class GoogleOAuthService implements OAuthServiceProvider {
         if (id == null || id.isJsonNull()) {
           throw new IOException("Response doesn't contain id field");
         }
-        JsonElement email = jsonObject.get("email");
-        JsonElement name = jsonObject.get("name");
+        JsonElement email = jsonObject.get("mail");
+        JsonElement name = jsonObject.get("displayName");
         String login = null;
 
-        if (domains.size() > 0) {
-          boolean domainMatched = false;
-          JsonObject jwtToken = retrieveJWTToken(token);
-          String hdClaim = retrieveHostedDomain(jwtToken);
-          for (String domain : domains) {
-            if (domain.equalsIgnoreCase(hdClaim)) {
-              domainMatched = true;
-              break;
-            }
-          }
-          if (!domainMatched) {
-            // TODO(davido): improve error reporting in OAuth extension point
-            log.error("Error: hosted domain validation failed: {}", Strings.nullToEmpty(hdClaim));
-            return null;
-          }
-        }
         if (useEmailAsUsername && !email.isJsonNull()) {
           login = email.getAsString().split("@")[0];
         }
+
         return new OAuthUserInfo(
-            GOOGLE_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
+            providerPrefix + id.getAsString() /*externalId*/,
             login /*username*/,
             email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
             name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
-            fixLegacyUserId ? id.getAsString() : null /*claimedIdentity*/);
+            linkOffice365Id ? OFFICE365_PROVIDER_PREFIX + id.getAsString() : null);
       }
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException("Cannot retrieve user info resource", e);
     }
 
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
-  }
-
-  private JsonObject retrieveJWTToken(OAuthToken token) throws IOException {
-    JsonElement idToken = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
-    if (idToken != null && idToken.isJsonObject()) {
-      JsonObject idTokenObj = idToken.getAsJsonObject();
-      JsonElement idTokenElement = idTokenObj.get("id_token");
-      if (idTokenElement != null && !idTokenElement.isJsonNull()) {
-        String payload;
-        try {
-          payload = decodePayload(idTokenElement.getAsString());
-        } catch (UnsupportedEncodingException e) {
-          throw new IOException(
-              String.format(
-                  "%s support is required to interact with JWTs", StandardCharsets.UTF_8.name()),
-              e);
-        }
-        if (!Strings.isNullOrEmpty(payload)) {
-          JsonElement tokenJsonElement = JSON.newGson().fromJson(payload, JsonElement.class);
-          if (tokenJsonElement.isJsonObject()) {
-            return tokenJsonElement.getAsJsonObject();
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  private static String retrieveHostedDomain(JsonObject jwtToken) {
-    JsonElement hdClaim = jwtToken.get("hd");
-    if (hdClaim != null && !hdClaim.isJsonNull()) {
-      String hd = hdClaim.getAsString();
-      log.debug("OAuth2: hd={}", hd);
-      return hd;
-    }
-    log.debug("OAuth2: JWT doesn't contain hd element");
-    return null;
-  }
-
-  /**
-   * Decode payload from JWT according to spec: "header.payload.signature"
-   *
-   * @param idToken Base64 encoded tripple, separated with dot
-   * @return openid_id part of payload, when contained, null otherwise
-   */
-  private static String decodePayload(String idToken) throws UnsupportedEncodingException {
-    Preconditions.checkNotNull(idToken);
-    String[] jwtParts = idToken.split("\\.");
-    Preconditions.checkState(jwtParts.length == 3);
-    String payloadStr = jwtParts[1];
-    Preconditions.checkNotNull(payloadStr);
-    return new String(Base64.decodeBase64(payloadStr), StandardCharsets.UTF_8.name());
   }
 
   @Override
@@ -221,21 +212,8 @@ class GoogleOAuthService implements OAuthServiceProvider {
 
   @Override
   public String getAuthorizationUrl() {
-    StringBuilder urlBuilder = new StringBuilder(service.getAuthorizationUrl());
-    try {
-      if (domains.size() == 1) {
-        urlBuilder.append("&hd=");
-        urlBuilder.append(URLEncoder.encode(domains.get(0), StandardCharsets.UTF_8.name()));
-      } else if (domains.size() > 1) {
-        urlBuilder.append("&hd=*");
-      }
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalArgumentException(e);
-    }
-    if (log.isDebugEnabled()) {
-      log.debug("OAuth2: authorization URL={}", urlBuilder);
-    }
-    return urlBuilder.toString();
+    String url = service.getAuthorizationUrl();
+    return url;
   }
 
   @Override
@@ -245,6 +223,20 @@ class GoogleOAuthService implements OAuthServiceProvider {
 
   @Override
   public String getName() {
-    return "Google OAuth2";
+    return "Office365 OAuth2";
+  }
+
+  /** Get the {@link JsonObject} of a given token. */
+  private JsonObject getTokenJson(String tokenBase64) {
+    String[] tokenParts = tokenBase64.split("\\.");
+    if (tokenParts.length != 3) {
+      throw new OAuthException("Token does not contain expected number of parts");
+    }
+
+    // Extract the payload part from the JWT token (header.payload.signature) by retrieving
+    // tokenParts[1].
+    return gson.fromJson(
+        new String(Base64.getUrlDecoder().decode(tokenParts[1]), StandardCharsets.UTF_8),
+        JsonObject.class);
   }
 }

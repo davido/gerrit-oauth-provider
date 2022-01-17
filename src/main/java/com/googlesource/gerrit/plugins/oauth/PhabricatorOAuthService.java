@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,49 +35,49 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-class Office365OAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(Office365OAuthService.class);
-  static final String CONFIG_SUFFIX = "-office365-oauth";
-  private static final String OFFICE365_PROVIDER_PREFIX = "office365-oauth:";
-  private static final String PROTECTED_RESOURCE_URL = "https://graph.microsoft.com/v1.0/me";
-  private static final String SCOPE =
-      "openid offline_access https://graph.microsoft.com/user.readbasic.all";
+class PhabricatorOAuthService implements OAuthServiceProvider {
+  private static final Logger log = LoggerFactory.getLogger(PhabricatorOAuthService.class);
+  static final String CONFIG_SUFFIX = "-phabricator-oauth";
+  private static final String PHABRICATOR_PROVIDER_PREFIX = "phabricator-oauth:";
+  private static final String PROTECTED_RESOURCE_URL = "%s/api/user.whoami";
+  private final String rootUrl;
   private final OAuth20Service service;
-  private final String canonicalWebUrl;
-  private final boolean useEmailAsUsername;
 
   @Inject
-  Office365OAuthService(
+  PhabricatorOAuthService(
       PluginConfigFactory cfgFactory,
       @PluginName String pluginName,
       @CanonicalWebUrl Provider<String> urlProvider) {
     PluginConfig cfg = cfgFactory.getFromGerritConfig(pluginName + CONFIG_SUFFIX);
-    this.canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
-    this.useEmailAsUsername = cfg.getBoolean(InitOAuth.USE_EMAIL_AS_USERNAME, false);
+    String canonicalWebUrl = CharMatcher.is('/').trimTrailingFrom(urlProvider.get()) + "/";
+    rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+    if (!URI.create(rootUrl).isAbsolute()) {
+      throw new ProvisionException("Root URL must be absolute URL");
+    }
     this.service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
             .apiSecret(cfg.getString(InitOAuth.CLIENT_SECRET))
             .callback(canonicalWebUrl + "oauth")
-            .defaultScope(SCOPE)
-            .build(new Office365Api());
+            .build(new PhabricatorApi(rootUrl));
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: canonicalWebUrl={}", canonicalWebUrl);
-      log.debug("OAuth2: scope={}", SCOPE);
-      log.debug("OAuth2: useEmailAsUsername={}", useEmailAsUsername);
     }
   }
 
   @Override
   public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
+    OAuthRequest request =
+        new OAuthRequest(Verb.GET, String.format(PROTECTED_RESOURCE_URL, rootUrl));
     OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
     service.signRequest(t, request);
 
@@ -95,19 +95,25 @@ class Office365OAuthService implements OAuthServiceProvider {
       }
       if (userJson.isJsonObject()) {
         JsonObject jsonObject = userJson.getAsJsonObject();
-        JsonElement id = jsonObject.get("id");
+        JsonElement jsonResult = jsonObject.get("result");
+        if (jsonResult == null) {
+          throw new IOException("Response doesn't contain result field");
+        }
+        JsonObject resultObject = jsonResult.getAsJsonObject();
+        JsonElement id = resultObject.get("phid");
         if (id == null || id.isJsonNull()) {
           throw new IOException("Response doesn't contain id field");
         }
-        JsonElement email = jsonObject.get("mail");
-        JsonElement name = jsonObject.get("displayName");
+        JsonElement email = resultObject.get("primaryEmail");
+        JsonElement name = resultObject.get("realName");
+        JsonElement username = resultObject.get("userName");
         String login = null;
 
-        if (useEmailAsUsername && !email.isJsonNull()) {
-          login = email.getAsString().split("@")[0];
+        if (!username.isJsonNull()) {
+          login = username.getAsString();
         }
         return new OAuthUserInfo(
-            OFFICE365_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
+            PHABRICATOR_PROVIDER_PREFIX + id.getAsString() /*externalId*/,
             login /*username*/,
             email == null || email.isJsonNull() ? null : email.getAsString() /*email*/,
             name == null || name.isJsonNull() ? null : name.getAsString() /*displayName*/,
@@ -135,8 +141,7 @@ class Office365OAuthService implements OAuthServiceProvider {
 
   @Override
   public String getAuthorizationUrl() {
-    String url = service.getAuthorizationUrl();
-    return url;
+    return service.getAuthorizationUrl();
   }
 
   @Override
@@ -146,6 +151,6 @@ class Office365OAuthService implements OAuthServiceProvider {
 
   @Override
   public String getName() {
-    return "Office365 OAuth2";
+    return "Phabricator OAuth2";
   }
 }

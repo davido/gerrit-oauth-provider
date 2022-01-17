@@ -41,8 +41,8 @@ public class GithubApiUrlTest {
   @Mock private Provider<String> urlProviderMock;
 
   private OAuthServiceProvider getGithubOAuthProvider(String rootUrl) {
-    PluginConfig pluginConfig =
-        new PluginConfig(PLUGIN_NAME + GitHubOAuthService.CONFIG_SUFFIX, new Config());
+    PluginConfig.Update pluginConfig =
+        PluginConfig.Update.forTest(PLUGIN_NAME + GitHubOAuthService.CONFIG_SUFFIX, new Config());
     if (!Strings.isNullOrEmpty(rootUrl)) {
       pluginConfig.setString(InitOAuth.ROOT_URL, rootUrl);
     }
@@ -50,7 +50,7 @@ public class GithubApiUrlTest {
     pluginConfig.setString(InitOAuth.CLIENT_SECRET, "secret");
     when(pluginConfigFactoryMock.getFromGerritConfig(
             PLUGIN_NAME + GitHubOAuthService.CONFIG_SUFFIX))
-        .thenReturn(pluginConfig);
+        .thenReturn(pluginConfig.asPluginConfig());
     when(urlProviderMock.get()).thenReturn(CANONICAL_URL);
 
     return new GitHubOAuthService(pluginConfigFactoryMock, PLUGIN_NAME, urlProviderMock);

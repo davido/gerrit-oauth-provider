@@ -20,7 +20,9 @@ gerrit_plugin(
     resources = glob(["src/main/resources/**/*"]),
     deps = [
         "@commons-codec//jar:neverlink",
+        "@jackson-core//jar",
         "@jackson-databind//jar",
+        "@scribejava-apis//jar",
         "@scribejava-core//jar",
     ],
 )
@@ -31,6 +33,7 @@ junit_tests(
     tags = ["oauth"],
     deps = [
         ":gerrit-oauth-provider__plugin_test_deps",
+        "@scribejava-apis//jar",
         "@scribejava-core//jar",
     ],
 )

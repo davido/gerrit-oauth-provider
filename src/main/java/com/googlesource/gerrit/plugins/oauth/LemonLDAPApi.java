@@ -15,8 +15,6 @@
 package com.googlesource.gerrit.plugins.oauth;
 
 import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
-import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
 import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
 
@@ -44,12 +42,5 @@ public class LemonLDAPApi extends DefaultApi20 {
   @Override
   public ClientAuthentication getClientAuthentication() {
     return RequestBodyAuthenticationScheme.instance();
-  }
-
-  // TODO(davido): Remove this override, if BearerSignatureAuthorization
-  // request header field is supported.
-  @Override
-  public BearerSignature getBearerSignature() {
-    return BearerSignatureURIQueryParameter.instance();
   }
 }

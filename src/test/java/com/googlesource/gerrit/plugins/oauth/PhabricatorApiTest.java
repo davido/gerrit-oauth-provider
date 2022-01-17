@@ -20,12 +20,12 @@ import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
 import org.junit.Before;
 import org.junit.Test;
 
-public class Office365ApiTest {
-  private Office365Api api;
+public class PhabricatorApiTest {
+  private PhabricatorApi api;
 
   @Before
   public void setUp() {
-    api = new Office365Api();
+    api = new PhabricatorApi("");
   }
 
   @Test

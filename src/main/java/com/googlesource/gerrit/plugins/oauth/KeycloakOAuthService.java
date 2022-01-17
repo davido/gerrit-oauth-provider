@@ -35,7 +35,9 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -49,6 +51,7 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
   private static final String KEYCLOAK_PROVIDER_PREFIX = "keycloak-oauth:";
   private final OAuth20Service service;
   private final String serviceName;
+  private final boolean usePreferredUsername;
 
   @Inject
   KeycloakOAuthService(
@@ -64,6 +67,7 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     }
     String realm = cfg.getString(InitOAuth.REALM);
     serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Keycloak OAuth2");
+    usePreferredUsername = cfg.getBoolean(InitOAuth.USE_PREFERRED_USERNAME, true);
 
     service =
         new ServiceBuilder(cfg.getString(InitOAuth.CLIENT_ID))
@@ -73,11 +77,11 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
             .build(new KeycloakApi(rootUrl, realm));
   }
 
-  private String parseJwt(String input) {
+  private String parseJwt(String input) throws UnsupportedEncodingException {
     String[] parts = input.split("\\.");
     Preconditions.checkState(parts.length == 3);
     Preconditions.checkNotNull(parts[1]);
-    return new String(Base64.decodeBase64(parts[1]));
+    return new String(Base64.decodeBase64(parts[1]), StandardCharsets.UTF_8.name());
   }
 
   @Override
@@ -85,9 +89,17 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     JsonElement tokenJson = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
     JsonObject tokenObject = tokenJson.getAsJsonObject();
     JsonElement id_token = tokenObject.get("id_token");
+    String jwt;
+    try {
+      jwt = parseJwt(id_token.getAsString());
+    } catch (UnsupportedEncodingException e) {
+      throw new IOException(
+          String.format(
+              "%s support is required to interact with JWTs", StandardCharsets.UTF_8.name()),
+          e);
+    }
 
-    JsonElement claimJson =
-        JSON.newGson().fromJson(parseJwt(id_token.getAsString()), JsonElement.class);
+    JsonElement claimJson = JSON.newGson().fromJson(jwt, JsonElement.class);
 
     JsonObject claimObject = claimJson.getAsJsonObject();
     if (log.isDebugEnabled()) {
@@ -105,12 +117,17 @@ public class KeycloakOAuthService implements OAuthServiceProvider {
     if (nameElement == null || nameElement.isJsonNull()) {
       throw new IOException("Response doesn't contain name field");
     }
-    String username = usernameElement.getAsString();
+    String usernameAsString = usernameElement.getAsString();
+    String username = null;
+    if (usePreferredUsername) {
+      username = usernameAsString;
+    }
+    String externalId = KEYCLOAK_PROVIDER_PREFIX + usernameAsString;
     String email = emailElement.getAsString();
     String name = nameElement.getAsString();
 
     return new OAuthUserInfo(
-        KEYCLOAK_PROVIDER_PREFIX + username /*externalId*/,
+        externalId /*externalId*/,
         username /*username*/,
         email /*email*/,
         name /*displayName*/,

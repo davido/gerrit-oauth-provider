@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,22 +15,30 @@
 package com.googlesource.gerrit.plugins.oauth;
 
 import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
-import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
+import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
 
-public class Office365Api extends DefaultApi20 {
-  @Override
-  public String getAccessTokenEndpoint() {
-    return "https://login.microsoftonline.com/organizations/oauth2/v2.0/token";
+public class PhabricatorApi extends DefaultApi20 {
+  private static final String AUTHORIZE_URL = "%s/oauthserver/auth/";
+
+  private final String rootUrl;
+
+  public PhabricatorApi(String rootUrl) {
+    this.rootUrl = rootUrl;
   }
 
   @Override
   public String getAuthorizationBaseUrl() {
-    return "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize";
+    return String.format(AUTHORIZE_URL, rootUrl);
   }
 
   @Override
-  public ClientAuthentication getClientAuthentication() {
-    return RequestBodyAuthenticationScheme.instance();
+  public String getAccessTokenEndpoint() {
+    return String.format("%s/oauthserver/token/", rootUrl);
+  }
+
+  @Override
+  public BearerSignature getBearerSignature() {
+    return BearerSignatureURIQueryParameter.instance();
   }
 }

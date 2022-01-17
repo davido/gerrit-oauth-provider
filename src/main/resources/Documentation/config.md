@@ -43,6 +43,31 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
   [plugin "@PLUGIN@-airvantage-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
+
+  [plugin "@PLUGIN@-phabricator-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    root-url = "<phabricator url>"
+
+  # The office365 has been renamed to azure and is deprecated.
+  [plugin "@PLUGIN@-office365-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    tenant = "<tenant (optional defaults to organizations if not set)>"
+
+  [plugin "@PLUGIN@-azure-oauth"]
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    tenant = "<tenant (optional defaults to organizations if not set)>"
+    link-to-existing-office365-accounts = true #Optional, if set will try to link old account with the @PLUGIN@-office365-oauth naming
+
+  [plugin "@PLUGIN@-keycloak-oauth"]
+    root-url = "<root url>" # for example, https://signon.example.com
+    realm = "<realm>"
+    client-id = "<client-id>"
+    client-secret = "<client-secret>"
+    use-preferred-username = true # Optional, if false will not send preferred_username from Keycloak to leave username unset
+
 ```
 
 When one from the sections above is omitted, OAuth SSO is used.
@@ -211,3 +236,59 @@ for an example.
 The client-id and client-secret for AirVantage OAuth can be obtained by registering
 a Client application.
 See [Getting Started](https://source.sierrawireless.com/airvantage/av/howto/cloud/gettingstarted_api).
+
+### Phabricator
+
+The client-id and client-secret for Phabricator can be obtained by registering a
+Client application.
+See [Using the Phabricator OAuth Server](https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/).
+
+### Azure (previously named Office365)
+Were previously named Office365 but both `plugin.gerrit-oauth-provider-azure-oauth` and
+`plugin.gerrit-oauth-provider-office365-oauth` is supported by the Azure OAuth.
+When running *java gerrit.war init* it will check the existing config to see if it finds the old
+naming and use that during the init run, if it does not find the `office365-oauth` it will
+use the new `azure-oauth` naming.
+
+The client-id and client-secret for Azure can be obtained by registering a new application,
+see [OAuth 2.0 and OpenID Connect protocols on Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols).
+
+####Username
+By default, Azure OAuth will not set a username (used for ssh) and the user can choose one from the web ui
+can be used.
+```
+plugin.gerrit-oauth-provider-azure-oauth.use-email-as-username = true
+```
+
+####Tenant
+The Azure OAuth is default set to use the tenant `organizations` but a specific tenant can be used by
+the option `tenant`. If a tenant other than `common`, `organizations` or `consumers` is used then the tokens will be
+validated that they are originating from the same tenant that is configured in the Gerrit OAuth plugin.
+See [Microsoft identity platform and OpenID Connect protocol](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc#fetch-the-openid-connect-metadata-document)
+```
+plugin.gerrit-oauth-provider-azure-oauth.tenant = <tenant to use>
+```
+
+Regardless of tenant all tokens will be checked that they contain the client_id set
+in the Azure OAuth.
+
+####Migrating from Office365 naming
+If this where previously installed with the `office365-oauth` you can migrate to `azure-oauth` by setting the
+flag.
+```
+plugin.gerrit-oauth-provider-azure-oauth.link-to-existing-office365-accounts = true
+```
+This will try to link the old `office365-oauth` external id to the new `azure-oauth` external id automatically.
+Another option is to migrate these manually offline, see [External IDs](https://gerrit-review.googlesource.com/Documentation/config-accounts.html#external-ids)
+for more information.
+
+### Keycloak
+
+When setting up a client in Keycloak for Gerrit, enter a value for the *Client ID* and ensure you choose the `openid-connect`
+protocol and select the `confidential` access type. Once you click save, a *Credentials* tab will appear where you will find
+the Secret.
+
+The root URL will the protocol and hostname of your Keycloak instance (for example, https://signon.example.com).
+
+You can optionally set `use-preferred-username = false` if you would prefer to not have the `preferred_username`
+token be automatically set as the users username, and instead let users choose their own usernames.
