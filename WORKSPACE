@@ -3,7 +3,7 @@ workspace(name = "com_github_davido_gerrit_oauth_provider")
 load("//:bazlets.bzl", "load_bazlets")
 
 load_bazlets(
-    commit = "0f81174e3d1b892a1342ebc75bb4bbb158ae0efe",
+    commit = "8fa44957c3b3b89ce1d96eba67441882c54503fc",
     #local_path = "/home/<user>/projects/bazlets",
 )
 
@@ -12,7 +12,7 @@ load(
     "gerrit_api",
 )
 
-gerrit_api(version = "3.3.0-SNAPSHOT")
+gerrit_api()
 
 load(":external_plugin_deps.bzl", "external_plugin_deps")
 
