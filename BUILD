@@ -8,7 +8,7 @@ load(
 )
 
 gerrit_plugin(
-    name = "gerrit-oauth-provider",
+    name = "oauth",
     srcs = glob(["src/main/java/**/*.java"]),
     manifest_entries = [
         "Gerrit-PluginName: gerrit-oauth-provider",

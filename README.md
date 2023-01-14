@@ -36,7 +36,7 @@ following:
 
 ```
   git clone https://gerrit.googlesource.com/plugins/oauth gerrit-oauth-provider
-  cd gerrit-oauth-provider && bazel build gerrit-oauth-provider
+  cd gerrit-oauth-provider && bazel build oauth
 ```
 
 Install
