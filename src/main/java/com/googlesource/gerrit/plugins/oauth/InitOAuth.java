@@ -54,6 +54,7 @@ class InitOAuth implements InitStep {
   private final Section azureActiveDirectoryAuthProviderSection;
   private final Section airVantageOAuthProviderSection;
   private final Section phabricatorOAuthProviderSection;
+  private final Section discoveryOAuthProviderSection;
 
   @Inject
   InitOAuth(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
@@ -84,6 +85,8 @@ class InitOAuth implements InitStep {
         sections.get(PLUGIN_SECTION, pluginName + AirVantageOAuthService.CONFIG_SUFFIX);
     this.phabricatorOAuthProviderSection =
         sections.get(PLUGIN_SECTION, pluginName + PhabricatorOAuthService.CONFIG_SUFFIX);
+    this.discoveryOAuthProviderSection =
+        sections.get(PLUGIN_SECTION, pluginName + DiscoveryOAuthService.CONFIG_SUFFIX);
   }
 
   @Override
@@ -202,6 +205,14 @@ class InitOAuth implements InitStep {
             "Use Phabricator OAuth provider for Gerrit login ?");
     if (configurePhabricatorOAuthProvider && configureOAuth(phabricatorOAuthProviderSection)) {
       checkRootUrl(phabricatorOAuthProviderSection.string("Phabricator Root URL", ROOT_URL, null));
+    }
+    
+    boolean configureDiscoveryOAuthProvider =
+        ui.yesno(
+            isConfigured(discoveryOAuthProviderSection),
+            "Use Well Known Discovery OAuth provider for Gerrit login ?");
+    if (configureDiscoveryOAuthProvider && configureOAuth(discoveryOAuthProviderSection)) {
+      checkRootUrl(discoveryOAuthProviderSection.string("Discovery Root URL(before `/.well-known')", ROOT_URL, null));
     }
   }
 
