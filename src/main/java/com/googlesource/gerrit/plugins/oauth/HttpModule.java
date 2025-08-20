@@ -137,5 +137,12 @@ class HttpModule extends ServletModule {
           .annotatedWith(Exports.named(PhabricatorOAuthService.CONFIG_SUFFIX))
           .to(PhabricatorOAuthService.class);
     }
+
+    cfg = cfgFactory.getFromGerritConfig(pluginName + DiscoveryOAuthService.CONFIG_SUFFIX);
+    if (cfg.getString(InitOAuth.CLIENT_ID) != null) {
+      bind(OAuthServiceProvider.class)
+          .annotatedWith(Exports.named(DiscoveryOAuthService.CONFIG_SUFFIX))
+          .to(DiscoveryOAuthService.class);
+    }
   }
 }
