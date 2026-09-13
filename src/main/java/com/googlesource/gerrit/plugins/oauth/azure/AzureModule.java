@@ -18,11 +18,7 @@ import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.base.GitOverHttpModule;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthTokenValidator;
 
-/**
- * Wires Azure's Git-over-HTTP token validator and login provider, plus the service-provider binding
- * the oauth-token SSH command injects to retrieve (and, if the provider supports it, refresh) the
- * caller's token. Installed only for the single provider with enable-git-over-http=true.
- */
+/** Wires Azure's Git-over-HTTP token validator and login provider. */
 public class AzureModule extends GitOverHttpModule {
   @Override
   protected String providerName() {

@@ -17,36 +17,52 @@ package com.googlesource.gerrit.plugins.oauth;
 import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
+import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.server.account.AccountExternalIdCreator;
 import com.google.gerrit.server.account.externalids.ExternalIdFactory;
 import com.google.gerrit.server.config.GerritServerConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
+import com.googlesource.gerrit.plugins.oauth.airvantage.AirVantageOAuthService;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureActiveDirectoryService;
 import com.googlesource.gerrit.plugins.oauth.azure.AzureModule;
 import com.googlesource.gerrit.plugins.oauth.azure.AzureOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthTokenValidationCache;
+import com.googlesource.gerrit.plugins.oauth.bitbucket.BitbucketOAuthService;
+import com.googlesource.gerrit.plugins.oauth.cas.CasOAuthService;
+import com.googlesource.gerrit.plugins.oauth.dex.DexOAuthService;
 import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryModule;
 import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthService;
+import com.googlesource.gerrit.plugins.oauth.facebook.FacebookOAuthService;
 import com.googlesource.gerrit.plugins.oauth.github.GitHubModule;
 import com.googlesource.gerrit.plugins.oauth.github.GitHubOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.github.GitHubOAuthService;
 import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabModule;
 import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthService;
 import com.googlesource.gerrit.plugins.oauth.google.GoogleModule;
 import com.googlesource.gerrit.plugins.oauth.google.GoogleOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.google.GoogleOAuthService;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakModule;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthService;
+import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasModule;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.eclipse.jgit.lib.Config;
 
 public class Module extends AbstractModule {
+
   private static final String OAUTH_SECTION_SUFFIX = "-oauth";
   private static final List<SupportedLoginProvider> SUPPORTED_LOGIN_PROVIDERS =
       List.of(
@@ -100,8 +116,43 @@ public class Module extends AbstractModule {
     bind(OAuthPluginConfigFactory.class);
     bind(HttpOAuthClientFactory.class);
     install(OAuthTokenValidationCache.module());
+    bindServiceProviders();
     bindExternalIdCreators();
     bindOAuthProviders();
+  }
+
+  /** All OAuth service-provider implementations, keyed by their configured section name. */
+  private static final List<Class<? extends OAuthServiceProvider>> ALL_SERVICE_PROVIDERS =
+      List.of(
+          AirVantageOAuthService.class,
+          AzureActiveDirectoryService.class,
+          BitbucketOAuthService.class,
+          CasOAuthService.class,
+          DexOAuthService.class,
+          DiscoveryOAuthService.class,
+          FacebookOAuthService.class,
+          GitHubOAuthService.class,
+          GitLabOAuthService.class,
+          GoogleOAuthService.class,
+          KeycloakOAuthService.class,
+          PhabricatorOAuthService.class,
+          SAPIasOAuthService.class);
+
+  /**
+   * Registers each configured provider's {@link OAuthServiceProvider} as an {@code @Exports} in
+   * this (sys) injector. Core declares {@code DynamicMap<OAuthServiceProvider>} in the sys injector
+   * ({@code GerritGlobalModule}), so these contributions populate the map that browser login, the
+   * core {@code oauth-token} SSH command, and {@code OAuthTokenRefresher} all read.
+   */
+  private void bindServiceProviders() {
+    for (Class<? extends OAuthServiceProvider> cls : ALL_SERVICE_PROVIDERS) {
+      String name = cls.getAnnotation(OAuthServiceProviderConfig.class).name();
+      if (hasClientId(name)) {
+        bind(OAuthServiceProvider.class)
+            .annotatedWith(Exports.named(OAuthServiceProviderExternalIdScheme.create(name)))
+            .to(cls);
+      }
+    }
   }
 
   private void bindExternalIdCreators() {

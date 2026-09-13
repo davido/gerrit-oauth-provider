@@ -20,6 +20,7 @@ import com.google.inject.AbstractModule;
 
 /** Base module binding a provider's Git-over-HTTP token validator and login provider. */
 public abstract class GitOverHttpModule extends AbstractModule {
+
   protected abstract String providerName();
 
   protected abstract Class<? extends OAuthTokenValidator> validatorClass();
