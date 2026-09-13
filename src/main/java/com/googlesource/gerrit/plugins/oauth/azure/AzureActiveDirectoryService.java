@@ -82,8 +82,8 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
       @Nullable OidcJwtValidator providedValidator) {
     super("Office365 OAuth2");
     PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
-    // Treat a blank tenant like an absent one (the ScribeJava Azure API normalized null/empty
-    // tenants rather than emitting a `//oauth2/...` endpoint); fall back to the default tenant.
+    // Treat a blank tenant like an absent one and fall back to the default tenant; an empty tenant
+    // would otherwise produce a malformed `https://login.microsoftonline.com//oauth2/...` endpoint.
     String configuredTenant = cfg.getString(OAuthConfigKeys.TENANT, DEFAULT_TENANT);
     this.tenant = Strings.isNullOrEmpty(configuredTenant) ? DEFAULT_TENANT : configuredTenant;
     this.clientId = cfg.getString(OAuthConfigKeys.CLIENT_ID);
@@ -97,10 +97,10 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
             useEmailAsUsername,
             linkOffice365Id);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // Native descriptor: request-body client auth (the ScribeJava Azure API used
-    // RequestBodyAuthenticationScheme), JSON token response, header bearer, tenant-scoped v2.0
-    // endpoints. The Graph /me fetch and its Accept header live in getUserInfo below; the id_token
-    // is validated there too (fixed tenant) before the resource call.
+    // Descriptor: request-body client auth (Azure v2.0 expects client_secret in the token
+    // request body), JSON token response, header bearer, tenant-scoped v2.0 endpoints. The Graph
+    // /me fetch and its Accept header live in getUserInfo below; the id_token is validated there
+    // too (fixed tenant) before the resource call.
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
             String.format(AUTHORIZATION_URL, tenant),
@@ -191,8 +191,8 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
       }
       return true;
     }
-    // Multi-tenant alias: no single issuer to pin, so keep the legacy unverified checks.
-    // Scribe does not expose the id_token, so it is extracted from the raw token response.
+    // Multi-tenant alias: no single issuer to pin, so keep the legacy unverified checks. The
+    // id_token is extracted from the raw token response.
     if (!TENANTS_WITHOUT_VALIDATION.contains(tenant)) {
       String tid = getTokenJson(token.getToken()).get("tid").getAsString();
       if (!tenant.equals(tid)) {

@@ -22,9 +22,9 @@ import com.googlesource.gerrit.plugins.oauth.client.OAuthClient;
 import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
 
 /**
- * Builds the ScribeJava-free {@link HttpOAuthClient} for a provider described by an {@link
- * OAuthProviderEndpoints}. Deliberately depends on nothing from {@code com.github.scribejava} so
- * the providers that use it can live in a Bazel target with no ScribeJava on its classpath.
+ * Builds the {@link HttpOAuthClient} for a provider described by an {@link OAuthProviderEndpoints}.
+ * Depends only on the JDK and Gson, so the providers that use it stay in Bazel targets with a lean
+ * classpath free of any heavyweight third-party OAuth/JSON library.
  */
 public class HttpOAuthClientFactory {
   private final OAuthPluginConfigFactory cfgFactory;
@@ -39,7 +39,7 @@ public class HttpOAuthClientFactory {
 
   /**
    * client-id/client-secret come from the provider's config and the callback from the canonical web
-   * URL, matching the ScribeJava {@code ServiceBuilder} wiring the native path replaces.
+   * URL.
    */
   public OAuthClient create(String providerName, OAuthProviderEndpoints endpoints) {
     PluginConfig cfg = cfgFactory.create(providerName);

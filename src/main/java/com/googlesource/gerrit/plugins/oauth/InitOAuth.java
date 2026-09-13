@@ -34,13 +34,10 @@ import com.google.gerrit.pgm.init.api.Section;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.googlesource.gerrit.plugins.oauth.airvantage.AirVantageOAuthService;
-import com.googlesource.gerrit.plugins.oauth.auth0.Auth0OAuthService;
-import com.googlesource.gerrit.plugins.oauth.authentik.AuthentikOAuthService;
 import com.googlesource.gerrit.plugins.oauth.azure.AzureActiveDirectoryService;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.bitbucket.BitbucketOAuthService;
 import com.googlesource.gerrit.plugins.oauth.cas.CasOAuthService;
-import com.googlesource.gerrit.plugins.oauth.cognito.CognitoOAuthService;
 import com.googlesource.gerrit.plugins.oauth.dex.DexOAuthService;
 import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthService;
 import com.googlesource.gerrit.plugins.oauth.facebook.FacebookOAuthService;
@@ -48,10 +45,8 @@ import com.googlesource.gerrit.plugins.oauth.github.GitHubOAuthService;
 import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthService;
 import com.googlesource.gerrit.plugins.oauth.google.GoogleOAuthService;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthService;
-import com.googlesource.gerrit.plugins.oauth.lemon.LemonLDAPOAuthService;
 import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
-import com.googlesource.gerrit.plugins.oauth.tuleap.TuleapOAuthService;
 import java.net.URI;
 
 public class InitOAuth implements InitStep {
@@ -68,16 +63,11 @@ public class InitOAuth implements InitStep {
   private final Section casOAuthProviderSection;
   private final Section facebookOAuthProviderSection;
   private final Section gitlabOAuthProviderSection;
-  private final Section lemonldapOAuthProviderSection;
   private final Section dexOAuthProviderSection;
   private final Section keycloakOAuthProviderSection;
   private final Section azureActiveDirectoryAuthProviderSection;
   private final Section airVantageOAuthProviderSection;
   private final Section phabricatorOAuthProviderSection;
-  private final Section tuleapOAuthProviderSection;
-  private final Section auth0OAuthProviderSection;
-  private final Section authentikOAuthProviderSection;
-  private final Section cognitoOAuthProviderSection;
   private final Section discoveryOAuthProviderSection;
 
   @Inject
@@ -91,17 +81,12 @@ public class InitOAuth implements InitStep {
     this.casOAuthProviderSection = getConfigSection(CasOAuthService.class);
     this.facebookOAuthProviderSection = getConfigSection(FacebookOAuthService.class);
     this.gitlabOAuthProviderSection = getConfigSection(GitLabOAuthService.class);
-    this.lemonldapOAuthProviderSection = getConfigSection(LemonLDAPOAuthService.class);
     this.dexOAuthProviderSection = getConfigSection(DexOAuthService.class);
     this.keycloakOAuthProviderSection = getConfigSection(KeycloakOAuthService.class);
     this.azureActiveDirectoryAuthProviderSection =
         getConfigSection(AzureActiveDirectoryService.class);
     this.airVantageOAuthProviderSection = getConfigSection(AirVantageOAuthService.class);
     this.phabricatorOAuthProviderSection = getConfigSection(PhabricatorOAuthService.class);
-    this.tuleapOAuthProviderSection = getConfigSection(TuleapOAuthService.class);
-    this.auth0OAuthProviderSection = getConfigSection(Auth0OAuthService.class);
-    this.authentikOAuthProviderSection = getConfigSection(AuthentikOAuthService.class);
-    this.cognitoOAuthProviderSection = getConfigSection(CognitoOAuthService.class);
     this.iasOAuthProviderSection = getConfigSection(SAPIasOAuthService.class);
     this.discoveryOAuthProviderSection = getConfigSection(DiscoveryOAuthService.class);
   }
@@ -141,6 +126,8 @@ public class InitOAuth implements InitStep {
     if (configureBitbucketOAuthProvider && configureOAuth(bitbucketOAuthProviderSection)) {
       bitbucketOAuthProviderSection.string(
           FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
+      bitbucketOAuthProviderSection.string(
+          "Enable PKCE for Bitbucket OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configureCasOAuthProvider =
@@ -148,14 +135,16 @@ public class InitOAuth implements InitStep {
     if (configureCasOAuthProvider && configureOAuth(casOAuthProviderSection)) {
       checkRootUrl(casOAuthProviderSection.string("CAS Root URL", ROOT_URL, null));
       casOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
+      casOAuthProviderSection.string("Enable PKCE for CAS OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configueFacebookOAuthProvider =
         ui.yesno(
             isConfigured(facebookOAuthProviderSection),
             "Use Facebook OAuth provider for Gerrit login?");
-    if (configueFacebookOAuthProvider) {
-      configureOAuth(facebookOAuthProviderSection);
+    if (configueFacebookOAuthProvider && configureOAuth(facebookOAuthProviderSection)) {
+      facebookOAuthProviderSection.string(
+          "Enable PKCE for Facebook OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configureGitLabOAuthProvider =
@@ -179,15 +168,6 @@ public class InitOAuth implements InitStep {
           "Enable PKCE for SAP IAS OAuth provider?", ENABLE_PKCE, "false");
       iasOAuthProviderSection.string(
           "Enable Git-over-HTTP for SAP IAS OAuth provider?", ENABLE_GIT_OVER_HTTP, "true");
-    }
-
-    boolean configureLemonLDAPOAuthProvider =
-        ui.yesno(
-            isConfigured(lemonldapOAuthProviderSection),
-            "Use LemonLDAP OAuth provider for Gerrit login?");
-    if (configureLemonLDAPOAuthProvider) {
-      checkRootUrl(lemonldapOAuthProviderSection.string("LemonLDAP Root URL", ROOT_URL, null));
-      configureOAuth(lemonldapOAuthProviderSection);
     }
 
     boolean configureDexOAuthProvider =
@@ -228,8 +208,9 @@ public class InitOAuth implements InitStep {
         ui.yesno(
             isConfigured(airVantageOAuthProviderSection),
             "Use AirVantage OAuth provider for Gerrit login?");
-    if (configureAirVantageOAuthProvider) {
-      configureOAuth(airVantageOAuthProviderSection);
+    if (configureAirVantageOAuthProvider && configureOAuth(airVantageOAuthProviderSection)) {
+      airVantageOAuthProviderSection.string(
+          "Enable PKCE for AirVantage OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configurePhabricatorOAuthProvider =
@@ -238,47 +219,8 @@ public class InitOAuth implements InitStep {
             "Use Phabricator OAuth provider for Gerrit login?");
     if (configurePhabricatorOAuthProvider && configureOAuth(phabricatorOAuthProviderSection)) {
       checkRootUrl(phabricatorOAuthProviderSection.string("Phabricator Root URL", ROOT_URL, null));
-    }
-
-    boolean configureTuleapOAuthProvider =
-        ui.yesno(
-            isConfigured(tuleapOAuthProviderSection),
-            "Use Tuleap OAuth provider for Gerrit login?");
-    if (configureTuleapOAuthProvider && configureOAuth(tuleapOAuthProviderSection)) {
-      checkRootUrl(tuleapOAuthProviderSection.string("Tuleap Root URL", ROOT_URL, null));
-    }
-
-    boolean configureAuth0OAuthProvider =
-        ui.yesno(
-            isConfigured(auth0OAuthProviderSection), "Use Auth0 OAuth provider for Gerrit login?");
-    if (configureAuth0OAuthProvider && configureOAuth(auth0OAuthProviderSection)) {
-      checkRootUrl(auth0OAuthProviderSection.string("Auth0 Root URL", ROOT_URL, null));
-      auth0OAuthProviderSection.string(
-          "Enable PKCE for Auth0 OAuth provider?", ENABLE_PKCE, "false");
-    }
-
-    boolean configureAuthentikOAuthProvider =
-        ui.yesno(
-            isConfigured(authentikOAuthProviderSection),
-            "Use Authentik OAuth provider for Gerrit login?");
-    if (configureAuthentikOAuthProvider && configureOAuth(authentikOAuthProviderSection)) {
-      checkRootUrl(authentikOAuthProviderSection.string("Authentik Root URL", ROOT_URL, null));
-      authentikOAuthProviderSection.string(
-          "Enable PKCE for Authentik OAuth provider?", ENABLE_PKCE, "false");
-      authentikOAuthProviderSection.string(
-          "Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
-    }
-
-    boolean configureCognitoOAuthProvider =
-        ui.yesno(
-            isConfigured(cognitoOAuthProviderSection),
-            "Use Cognito OAuth provider for Gerrit login?");
-    if (configureCognitoOAuthProvider && configureOAuth(cognitoOAuthProviderSection)) {
-      checkRootUrl(cognitoOAuthProviderSection.string("Cognito Root URL", ROOT_URL, null));
-      cognitoOAuthProviderSection.string(
-          "Enable PKCE for Cognito OAuth provider?", ENABLE_PKCE, "false");
-      cognitoOAuthProviderSection.string(
-          "Link to existing Gerrit LDAP accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
+      phabricatorOAuthProviderSection.string(
+          "Enable PKCE for Phabricator OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configureDiscoveryOAuthProvider =

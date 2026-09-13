@@ -89,7 +89,7 @@ public class GoogleOAuthService extends AbstractOAuthService {
     this.domains = Arrays.asList(cfg.getStringList(OAuthConfigKeys.DOMAIN));
     this.useEmailAsUsername = cfg.getBoolean(OAuthConfigKeys.USE_EMAIL_AS_USERNAME, false);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // Native client. Google: default HTTP Basic client auth, JSON token response, header-bearer
+    // Google: default HTTP Basic client auth, JSON token response, header-bearer
     // userinfo GET, openid email profile scope. The hosted-domain (hd) authorization parameter is
     // appended by getAuthorizationInfo() below -- not by the client -- so no descriptor change is
     // needed for it. Google2Api still supplies the fixed endpoints and the tokeninfo URL (Git

@@ -98,7 +98,6 @@ public class Module extends AbstractModule {
   @Override
   protected void configure() {
     bind(OAuthPluginConfigFactory.class);
-    bind(OAuth20ServiceFactory.class);
     bind(HttpOAuthClientFactory.class);
     install(OAuthTokenValidationCache.module());
     bindExternalIdCreators();

@@ -21,7 +21,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gerrit.server.config.PluginConfig;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
 import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
 import com.googlesource.gerrit.plugins.oauth.client.OAuthClient;
@@ -36,18 +39,21 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FacebookOAuthServiceTest {
+  @Mock private OAuthPluginConfigFactory mockConfigFactory;
+  @Mock private PluginConfig mockPluginConfig;
   @Mock private HttpOAuthClientFactory mockClientFactory;
   @Mock private OAuthClient mockClient;
 
   @Before
   public void setUp() {
+    when(mockConfigFactory.create(FacebookOAuthService.PROVIDER_NAME)).thenReturn(mockPluginConfig);
     when(mockClientFactory.create(anyString(), any(OAuthProviderEndpoints.class)))
         .thenReturn(mockClient);
   }
 
   @Test
   public void constructor_buildsFacebookDescriptor() {
-    new FacebookOAuthService(mockClientFactory);
+    new FacebookOAuthService(mockConfigFactory, mockClientFactory);
 
     OAuthProviderEndpoints ep = capturedEndpoints();
     assertThat(ep.authorizationEndpoint()).isEqualTo("https://www.facebook.com/dialog/oauth");
@@ -58,6 +64,15 @@ public class FacebookOAuthServiceTest {
     assertThat(ep.tokenResponseFormat()).isEqualTo(TokenResponseFormat.JSON);
     assertThat(ep.tolerateMissingTokenType()).isFalse();
     assertThat(ep.enablePkce()).isFalse();
+  }
+
+  @Test
+  public void constructor_enablePkce_readsFromConfig() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
+
+    new FacebookOAuthService(mockConfigFactory, mockClientFactory);
+
+    assertThat(capturedEndpoints().enablePkce()).isTrue();
   }
 
   private OAuthProviderEndpoints capturedEndpoints() {

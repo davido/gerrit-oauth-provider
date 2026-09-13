@@ -15,9 +15,9 @@
 package com.googlesource.gerrit.plugins.oauth.base;
 
 /**
- * Config key names shared by the init wizard and the provider services. Kept in the ScribeJava-free
- * base layer so migrated providers can read them without depending on {@code InitOAuth} (the init
- * step lives in the plugin target and references every provider).
+ * Config key names shared by the init wizard and the provider services. Kept in the base layer so
+ * providers can read them without depending on {@code InitOAuth} (the init step lives in the plugin
+ * target and references every provider).
  */
 public final class OAuthConfigKeys {
   public static final String CLIENT_ID = "client-id";

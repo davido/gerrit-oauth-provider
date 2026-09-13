@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.gerrit.server.config.PluginConfig;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
 import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
@@ -64,6 +65,15 @@ public class BitbucketOAuthServiceTest {
     assertThat(ep.tokenResponseFormat()).isEqualTo(TokenResponseFormat.JSON);
     assertThat(ep.tolerateMissingTokenType()).isFalse();
     assertThat(ep.enablePkce()).isFalse();
+  }
+
+  @Test
+  public void constructor_enablePkce_readsFromConfig() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
+
+    new BitbucketOAuthService(mockConfigFactory, mockClientFactory);
+
+    assertThat(capturedEndpoints().enablePkce()).isTrue();
   }
 
   private OAuthProviderEndpoints capturedEndpoints() {

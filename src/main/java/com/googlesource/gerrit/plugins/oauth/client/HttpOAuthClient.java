@@ -39,17 +39,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Native {@link OAuthClient} over {@link OAuthHttpTransport}, driven by an {@link
- * OAuthProviderEndpoints} descriptor -- the ScribeJava-free replacement for {@code
- * ScribeOAuthClient}. Parses JSON with Gson (never Jackson) so removing ScribeJava also drops its
- * Jackson transitive.
+ * The {@link OAuthClient} over {@link OAuthHttpTransport}, driven by an {@link
+ * OAuthProviderEndpoints} descriptor -- the OAuth authorization-code client for every provider. A
+ * pure JDK + Gson implementation, which is why the plugin depends on no third-party OAuth or JSON
+ * library.
  *
- * <p>Wire behavior mirrors ScribeJava's {@code OAuth20Service} so a provider can switch over
- * without changing what it sends: same authorization-URL parameters and percent-encoding, the same
- * form-encoded token request (client auth, {@code code}/{@code redirect_uri}/{@code scope}/{@code
- * grant_type}[/{@code code_verifier}]), and the same bearer placement on resource fetches. Holds no
- * per-authorization state: the PKCE verifier is generated per call and returned in {@link
- * OAuthAuthorizationInfo}.
+ * <p>Emits the standard OAuth 2.0 wire shape: authorization-URL parameters with OAuth
+ * percent-encoding, a form-encoded token request (client auth, {@code code}/{@code
+ * redirect_uri}/{@code scope}/{@code grant_type}[/{@code code_verifier}]), and the configured
+ * bearer placement on resource fetches. Holds no per-authorization state: the PKCE verifier is
+ * generated per call and returned in {@link OAuthAuthorizationInfo}.
  */
 public class HttpOAuthClient implements OAuthClient {
   private final OAuthProviderEndpoints endpoints;
@@ -61,8 +60,8 @@ public class HttpOAuthClient implements OAuthClient {
 
   public HttpOAuthClient(
       OAuthProviderEndpoints endpoints, String clientId, String clientSecret, String callback) {
-    // Fail fast on missing config like ScribeJava's ServiceBuilder, which rejects a blank client-id
-    // or client-secret before any request. Public clients (no secret) would be a separate feature.
+    // Fail fast on missing config: reject a blank client-id or client-secret before any request.
+    // Public clients (no secret) would be a separate feature.
     this.endpoints = requireNonNull(endpoints, "endpoints");
     this.clientId = requireNonBlank(clientId, "client-id");
     this.clientSecret = requireNonBlank(clientSecret, "client-secret");
@@ -83,10 +82,9 @@ public class HttpOAuthClient implements OAuthClient {
 
   private String buildAuthorizationUrl(@Nullable String codeChallenge) {
     List<String[]> params = new ArrayList<>();
-    // PKCE params first (like ScribeJava, which seeds the ParameterList with the additional params
-    // before the fixed ones), in a fixed order. ScribeJava's two PKCE params come from a HashMap,
-    // so their relative order is JVM-dependent; golden-wire therefore compares PKCE authorization
-    // URLs by canonicalized query params (the code_challenge value is random per call anyway).
+    // PKCE params first, then the fixed response_type/client_id/redirect_uri/scope, in a stable
+    // order. Authorization servers treat query parameters as unordered, so the exact order is not
+    // significant; it is fixed here only for deterministic, testable output.
     if (codeChallenge != null) {
       params.add(new String[] {"code_challenge", codeChallenge});
       params.add(new String[] {"code_challenge_method", "S256"});
@@ -123,7 +121,7 @@ public class HttpOAuthClient implements OAuthClient {
 
   @Override
   public OAuthToken passwordGrant(String username, String password) throws IOException {
-    // Scribe's password grant orders the body username, password, scope, grant_type, then appends
+    // Password grant orders the body username, password, scope, grant_type, then appends
     // request-body client auth LAST -- unlike code exchange, where client auth comes first.
     List<String[]> body = new ArrayList<>();
     body.add(new String[] {"username", username});
@@ -250,7 +248,7 @@ public class HttpOAuthClient implements OAuthClient {
     }
   }
 
-  /** Appends {@code params} as a query string, percent-encoded exactly like ScribeJava. */
+  /** Appends {@code params} as a query string with OAuth percent-encoding. */
   private static String appendQuery(String url, List<String[]> params) {
     StringBuilder sb = new StringBuilder(url);
     char sep = url.indexOf('?') == -1 ? '?' : '&';
@@ -289,7 +287,9 @@ public class HttpOAuthClient implements OAuthClient {
     return out;
   }
 
-  /** Matches ScribeJava's OAuthEncoder: URL encoding plus the OAuth percent-encoding fixups. */
+  /**
+   * OAuth percent-encoding: URL encoding plus the RFC 5849 fixups (space, {@code *}, {@code ~}).
+   */
   private static String encode(String plain) {
     String encoded = URLEncoder.encode(plain, UTF_8);
     return encoded.replace("+", "%20").replace("*", "%2A").replace("%7E", "~");

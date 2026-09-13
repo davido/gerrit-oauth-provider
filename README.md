@@ -1,28 +1,33 @@
 Gerrit OAuth2 authentication provider
 =====================================
 
-[![Build Status](https://travis-ci.org/davido/gerrit-oauth-provider.svg?branch=master)](https://travis-ci.org/davido/gerrit-oauth-provider)
-
-
-With this plugin Gerrit can use OAuth2 protocol for authentication. 
+With this plugin Gerrit can use OAuth2 protocol for authentication.
 Supported OAuth providers:
 
 * [AirVantage](https://doc.airvantage.net/av/reference/cloud/API/#API-GeneralInformation-Authentication)
+* [Azure (previously named Office365)](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols)
 * [Bitbucket](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html)
 * [CAS](https://www.apereo.org/projects/cas)
 * [CoreOS Dex](https://github.com/coreos/dex)
+* [Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html) — any generic OpenID Connect provider, via Well-Known Discovery
 * [Facebook](https://developers.facebook.com/docs/facebook-login)
 * [GitHub](https://developer.github.com/v3/oauth/)
 * [GitLab](https://about.gitlab.com/)
 * [Google](https://developers.google.com/identity/protocols/OAuth2)
 * [Keycloak](http://www.keycloak.org/)
-* [LemonLDAP::NG](https://lemonldap-ng.org)
-* [Azure (previously named Office365)](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols)
 * [Phabricator](https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/)
-* [Tuleap](https://docs.tuleap.org/user-guide/oauth2.html)
-* [Auth0](https://auth0.com/docs/authenticate/protocols/oauth)
+* [SAP Cloud Identity Services (IAS)](https://help.sap.com/docs/identity-authentication)
 
-See the [Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) what it can do for you.
+Auth0, Authentik, Amazon Cognito, LemonLDAP::NG and Tuleap were previously
+shipped as dedicated providers. They are standard OpenID Connect providers, so
+they have been removed in favour of the generic Discovery provider; see
+[Documentation/config-discovery.md](src/main/resources/Documentation/config-discovery.md)
+for how to migrate their configuration.
+
+See [Documentation/providers.md](src/main/resources/Documentation/providers.md)
+for a per-provider capability matrix, and the
+[Wiki](https://github.com/davido/gerrit-oauth-provider/wiki) for what it can do
+for you.
 
 Prebuilt artifacts 
 ------------------

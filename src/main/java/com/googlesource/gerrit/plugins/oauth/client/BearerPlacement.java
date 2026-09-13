@@ -15,18 +15,15 @@
 package com.googlesource.gerrit.plugins.oauth.client;
 
 /**
- * Where the native client puts the bearer token when fetching a protected resource -- the
- * descriptor equivalent of ScribeJava's {@code BearerSignature} strategies. Changing a provider's
- * placement would break its resource fetch, so this must match the provider's current behavior
- * exactly.
+ * Where the client puts the bearer token when fetching a protected resource. Changing a provider's
+ * placement would break its resource fetch, so this must match the provider's behavior exactly.
  */
 public enum BearerPlacement {
   /** {@code Authorization: Bearer <token>} header. The normal case. */
   AUTHORIZATION_HEADER,
   /**
-   * {@code ?access_token=<token>} query parameter. Used by the providers that currently rely on
-   * ScribeJava's {@code BearerSignatureURIQueryParameter}: Keycloak, Dex, Bitbucket, AirVantage,
-   * Phabricator, and CAS.
+   * {@code ?access_token=<token>} query parameter. Used by the providers whose APIs read the token
+   * from the query string: Dex, Bitbucket, AirVantage, Phabricator, and CAS.
    */
   URI_QUERY_ACCESS_TOKEN
 }

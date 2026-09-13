@@ -82,6 +82,16 @@ public class PhabricatorOAuthServiceTest {
         () -> new PhabricatorOAuthService(mockConfigFactory, mockClientFactory));
   }
 
+  @Test
+  public void constructor_enablePkce_readsFromConfig() {
+    when(mockPluginConfig.getString(OAuthConfigKeys.ROOT_URL)).thenReturn(ROOT_URL);
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
+
+    new PhabricatorOAuthService(mockConfigFactory, mockClientFactory);
+
+    assertThat(capturedEndpoints().enablePkce()).isTrue();
+  }
+
   private OAuthProviderEndpoints capturedEndpoints() {
     ArgumentCaptor<OAuthProviderEndpoints> captor =
         ArgumentCaptor.forClass(OAuthProviderEndpoints.class);

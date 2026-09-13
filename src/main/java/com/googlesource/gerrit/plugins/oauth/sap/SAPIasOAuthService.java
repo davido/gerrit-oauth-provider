@@ -63,7 +63,7 @@ public class SAPIasOAuthService extends AbstractOAuthService {
     }
     linkExistingGerrit = cfg.getBoolean(OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT, false);
     boolean enablePKCE = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // Native descriptor: default HTTP Basic client auth, JSON token response, header bearer, scope
+    // Descriptor: default HTTP Basic client auth, JSON token response, header bearer, scope
     // "openid profile email". SAP IAS may omit token_type, so tolerate it. Both the browser
     // code-exchange flow and the resource-owner password grant (getAccessToken below) run on this
     // client; the id_token is validated by the SAP CombiningValidator in getUserInfo.

@@ -53,7 +53,7 @@ public class GitLabOAuthService extends StandardResourceOAuthService {
       throw new ProvisionException("Root URL must be absolute URL");
     }
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // Native client. GitLab: request-body client auth, JSON token response, no scope, and an
+    // GitLab: request-body client auth, JSON token response, no scope, and an
     // Authorization-header bearer on the /api/v4/user resource GET. GitLabApi still supplies the
     // authorize/token URLs. The Git-over-HTTP token/info validator is unaffected.
     GitLabApi api = new GitLabApi(rootUrl);

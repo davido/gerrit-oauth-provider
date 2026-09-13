@@ -1,7 +1,4 @@
 env
-jackson-annotations
-jackson-core
-jackson-databind
 java-access-api
 java-api
 java-consumption-api
@@ -13,10 +10,7 @@ json
 libbase
 libclient
 libjwt
-libproviders-native
+libproviders
 libutils
 nimbus-jose-jwt
-scribejava-apis
-scribejava-core
-scribejava-java8
 token-client

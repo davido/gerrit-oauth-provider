@@ -60,8 +60,8 @@ public class CasOAuthService extends StandardResourceOAuthService {
     }
     fixLegacyUserId = cfg.getBoolean(OAuthConfigKeys.FIX_LEGACY_USER_ID, false);
     boolean useJsonExtractor = cfg.getBoolean(USE_JSON_EXTRACTOR, false);
-    // Native descriptor: default HTTP Basic client auth, bearer as an access_token query parameter,
-    // no
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: default HTTP Basic client auth, bearer as an access_token query parameter, no
     // scope. The token response is form-encoded
     // by default (CAS's classic extractor) or JSON when use-json-extractor is set. CAS may omit
     // token_type, so tolerate it (the empty string is stored instead of failing).
@@ -74,7 +74,7 @@ public class CasOAuthService extends StandardResourceOAuthService {
             BearerPlacement.URI_QUERY_ACCESS_TOKEN,
             useJsonExtractor ? TokenResponseFormat.JSON : TokenResponseFormat.FORM_URL_ENCODED,
             /* tolerateMissingTokenType= */ true,
-            /* enablePkce= */ false);
+            enablePkce);
     client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }

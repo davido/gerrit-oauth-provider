@@ -62,9 +62,9 @@ public class GitHubOAuthService extends StandardResourceOAuthService {
         OAuthUrls.trimTrailingSlashes(cfg.getString(OAuthConfigKeys.ROOT_URL, GITHUB_ROOT_URL));
     api = new GitHub2Api(rootUrl);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // First provider on the native, ScribeJava-free client. GitHub's browser flow: form-encoded
-    // token response, default HTTP Basic client auth, Authorization-header bearer. GitHub2Api still
-    // supplies the endpoint URLs (and the REST API URL for the check-token Git path).
+    // GitHub's browser flow: form-encoded token response, default HTTP Basic client auth,
+    // Authorization-header bearer. GitHub2Api still supplies the endpoint URLs (and the REST API
+    // URL for the check-token Git path).
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
             api.getAuthorizationBaseUrl(),

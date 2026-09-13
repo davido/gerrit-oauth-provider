@@ -19,11 +19,14 @@ import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.asString;
 import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
+import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.googlesource.gerrit.plugins.oauth.base.StandardResourceOAuthService;
@@ -48,9 +51,11 @@ public class FacebookOAuthService extends StandardResourceOAuthService {
   private final String extIdScheme;
 
   @Inject
-  FacebookOAuthService(HttpOAuthClientFactory clientFactory) {
+  FacebookOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
     super("Facebook OAuth2");
-    // Native descriptor: request-body client auth, JSON token response, header bearer, scope email.
+    PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: request-body client auth, JSON token response, header bearer, scope email.
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
             AUTHORIZATION_URL,
@@ -60,14 +65,14 @@ public class FacebookOAuthService extends StandardResourceOAuthService {
             BearerPlacement.AUTHORIZATION_HEADER,
             TokenResponseFormat.JSON,
             /* tolerateMissingTokenType= */ false,
-            /* enablePkce= */ false);
+            enablePkce);
     client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }
 
   @Override
   protected String resourceUrl() {
-    // Encode the fields value exactly as ScribeJava's query parameter did (comma -> %2C).
+    // Percent-encode the fields value (comma -> %2C) so it is a valid single query parameter.
     return PROTECTED_RESOURCE_URL
         + "?"
         + FIELDS_QUERY

@@ -68,7 +68,7 @@ public class DexOAuthService extends StandardIdTokenOAuthService {
     domain = cfg.getString(OAuthConfigKeys.DOMAIN, null);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
     DexApi api = new DexApi(rootUrl);
-    // Native descriptor: default HTTP Basic client auth, JSON token response, and the bearer as an
+    // Descriptor: default HTTP Basic client auth, JSON token response, and the bearer as an
     // access_token query parameter. DexApi is kept
     // for the issuer/JWKS the id_token validator below reads.
     OAuthProviderEndpoints endpoints =

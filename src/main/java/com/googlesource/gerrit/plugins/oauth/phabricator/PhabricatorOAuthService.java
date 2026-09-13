@@ -56,7 +56,8 @@ public class PhabricatorOAuthService extends StandardResourceOAuthService {
     if (!URI.create(rootUrl).isAbsolute()) {
       throw new ProvisionException("Root URL must be absolute URL");
     }
-    // Native descriptor: default HTTP Basic client auth, JSON token response, no scope, and the
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: default HTTP Basic client auth, JSON token response, no scope, and the
     // bearer as an access_token query parameter.
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
@@ -67,7 +68,7 @@ public class PhabricatorOAuthService extends StandardResourceOAuthService {
             BearerPlacement.URI_QUERY_ACCESS_TOKEN,
             TokenResponseFormat.JSON,
             /* tolerateMissingTokenType= */ false,
-            /* enablePkce= */ false);
+            enablePkce);
     client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }

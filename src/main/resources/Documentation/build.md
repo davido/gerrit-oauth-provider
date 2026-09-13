@@ -18,22 +18,33 @@ compared against the checked-in allowlist:
 
 This acts as a guardrail to detect unintended changes to the packaged runtime dependency set.
 
-To run the check (standalone or in Gerrit tree):
+To run the check:
 
 ```bash
-bazelisk test //:check_oauth_third_party_runtime_jars
+# Standalone plugin build:
+bazelisk test //:oauth_dependency_allowlist_test
+# In the Gerrit tree:
+bazelisk test //plugins/oauth:oauth_dependency_allowlist_test
 ```
+
+Note: this test is not part of the `oauth_tests` suite, so `bazel test
+//plugins/oauth/...` (all targets) is the way to run it alongside the unit tests.
 
 #### Updating the allowlist
 
 If the test fails because the packaged third-party JAR set changed, the plugin’s bundled runtime
 dependencies have changed.
 
-If the change is expected and has been reviewed, refresh the allowlist:
+If the change is expected and has been reviewed, refresh the allowlist from the generated manifest:
 
 ```bash
-bazelisk build //:oauth_third_party_runtime_jars.txt
-cp bazel-bin/oauth_third_party_runtime_jars.txt oauth_third_party_runtime_jars.allowlist.txt
+# Standalone plugin build:
+bazelisk build //:oauth_dependency_allowlist_test_manifest
+cp bazel-bin/oauth_dependency_allowlist_test_manifest.txt oauth_third_party_runtime_jars.allowlist.txt
+
+# In the Gerrit tree:
+bazelisk build //plugins/oauth:oauth_dependency_allowlist_test_manifest
+cp bazel-bin/plugins/oauth/oauth_dependency_allowlist_test_manifest.txt plugins/oauth/oauth_third_party_runtime_jars.allowlist.txt
 ```
 
 Commit the updated allowlist along with the dependency change.

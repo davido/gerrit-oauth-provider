@@ -14,10 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth.client;
 
-/**
- * How the native client parses the token endpoint's response body -- the descriptor equivalent of
- * ScribeJava's {@code TokenExtractor} choice.
- */
+/** How the client parses the token endpoint's response body. */
 public enum TokenResponseFormat {
   /**
    * {@code application/json} body: {@code {"access_token":...,"token_type":...}}. The common case,
@@ -27,7 +24,7 @@ public enum TokenResponseFormat {
   /**
    * {@code application/x-www-form-urlencoded} body: {@code access_token=...&token_type=...}. Used
    * by GitHub's OAuth-App token endpoint and by CAS when {@code use-json-extractor = false} (its
-   * default), via ScribeJava's {@code OAuth2AccessTokenExtractor}.
+   * default).
    */
   FORM_URL_ENCODED
 }

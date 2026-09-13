@@ -81,7 +81,7 @@ public class HttpOAuthClientTest {
   }
 
   @Test
-  public void authorizationUrl_noPkce_matchesScribeShape() {
+  public void authorizationUrl_noPkce_hasStandardShape() {
     OAuthAuthorizationInfo info =
         new HttpOAuthClient(standard(ClientAuthStyle.BASIC), CLIENT_ID, CLIENT_SECRET, CALLBACK)
             .getAuthorizationInfo();
@@ -352,8 +352,8 @@ public class HttpOAuthClientTest {
             .passwordGrant("alice", "pw");
 
     assertThat(c.method).isEqualTo("POST");
-    // Scribe order: username, password, scope, grant_type (request-body client auth would be last;
-    // here Basic auth puts credentials in the header instead).
+    // Password-grant body order: username, password, scope, grant_type (request-body client auth
+    // would be last; here Basic auth puts credentials in the header instead).
     assertThat(c.body)
         .isEqualTo("username=alice&password=pw&scope=openid%20email&grant_type=password");
     assertThat(token.getToken()).isEqualTo("at");

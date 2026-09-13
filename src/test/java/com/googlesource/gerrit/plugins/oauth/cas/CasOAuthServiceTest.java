@@ -72,6 +72,15 @@ public class CasOAuthServiceTest {
   }
 
   @Test
+  public void constructor_enablePkce_readsFromConfig() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
+
+    new CasOAuthService(mockConfigFactory, mockClientFactory);
+
+    assertThat(capturedEndpoints().enablePkce()).isTrue();
+  }
+
+  @Test
   public void constructor_useJsonExtractor_selectsJsonTokenFormat() {
     when(mockPluginConfig.getBoolean("use-json-extractor", false)).thenReturn(true);
 

@@ -19,11 +19,10 @@ import static java.util.Objects.requireNonNull;
 import com.google.gerrit.common.Nullable;
 
 /**
- * The static, per-provider OAuth 2.0 protocol shape the native {@code HttpOAuthClient} needs -- the
- * in-tree replacement for a ScribeJava {@code DefaultApi20} descriptor. It encodes only what varies
- * by provider; the {@code client_id}/{@code client_secret}/callback stay in {@code PluginConfig}
- * and are read by the client factory, and the protected-resource URL is passed per call to {@link
- * OAuthClient#get}.
+ * The static, per-provider OAuth 2.0 protocol shape the {@code HttpOAuthClient} needs. It encodes
+ * only what varies by provider; the {@code client_id}/{@code client_secret}/callback stay in {@code
+ * PluginConfig} and are read by the client factory, and the protected-resource URL is passed per
+ * call to {@link OAuthClient#get}.
  *
  * <p>Fields:
  *
@@ -59,8 +58,8 @@ public record OAuthProviderEndpoints(
     requireNonNull(clientAuthStyle, "clientAuthStyle");
     requireNonNull(bearerPlacement, "bearerPlacement");
     requireNonNull(tokenResponseFormat, "tokenResponseFormat");
-    // Normalize an empty scope to null so "omit scope" is a single condition (a null check),
-    // matching the ScribeJava factory, which only sets a default scope when it is non-empty.
+    // Normalize an empty scope to null so "omit scope" is a single condition (a null check): the
+    // authorization URL and token request emit the scope parameter only when it is non-empty.
     if (scope != null && scope.isEmpty()) {
       scope = null;
     }

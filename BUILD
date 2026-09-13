@@ -7,8 +7,6 @@ load(
 )
 
 EXT_DEPS = [
-    "com.github.scribejava:scribejava-apis",
-    "com.github.scribejava:scribejava-core",
     "com.nimbusds:nimbus-jose-jwt",
     "com.sap.cloud.security.java:api",
     "com.sap.cloud.security.java:security",
@@ -56,7 +54,7 @@ gerrit_plugin_library(
     deps = [":utils"],
 )
 
-PROVIDERS_NATIVE_SRCS = [
+PROVIDERS_SRCS = [
     "src/main/java/com/googlesource/gerrit/plugins/oauth/airvantage/**/*.java",
     "src/main/java/com/googlesource/gerrit/plugins/oauth/azure/**/*.java",
     "src/main/java/com/googlesource/gerrit/plugins/oauth/bitbucket/**/*.java",
@@ -73,8 +71,8 @@ PROVIDERS_NATIVE_SRCS = [
 ]
 
 gerrit_plugin_library(
-    name = "providers-native",
-    srcs = glob(PROVIDERS_NATIVE_SRCS),
+    name = "providers",
+    srcs = glob(PROVIDERS_SRCS),
     ext_deps = [
         "com.sap.cloud.security.java:api",
         "com.sap.cloud.security.java:security",
@@ -99,10 +97,9 @@ gerrit_plugin(
             CLIENT_SRCS,
             JWT_SRCS,
             UTILS_SRCS,
-        ] + PROVIDERS_NATIVE_SRCS,
+        ] + PROVIDERS_SRCS,
     ),
     ext_deps = [
-        "com.fasterxml.jackson.core:jackson-databind",
         "com.sap.cloud.security:env",
         "com.sap.cloud.security.xsuaa:token-client",
     ] + EXT_DEPS,
@@ -120,12 +117,12 @@ gerrit_plugin(
         ":base",
         ":client",
         ":jwt",
-        ":providers-native",
+        ":providers",
         ":utils",
     ],
 )
 
-PROVIDERS_NATIVE_TEST_SRCS = [
+PROVIDERS_TEST_SRCS = [
     "src/test/java/com/googlesource/gerrit/plugins/oauth/airvantage/**/*.java",
     "src/test/java/com/googlesource/gerrit/plugins/oauth/azure/**/*.java",
     "src/test/java/com/googlesource/gerrit/plugins/oauth/bitbucket/**/*.java",
@@ -142,7 +139,7 @@ PROVIDERS_NATIVE_TEST_SRCS = [
 ]
 
 gerrit_plugin_ext_test_deps(
-    name = "providers_native_test_deps",
+    name = "providers_test_deps",
     ext_deps = [
         "com.nimbusds:nimbus-jose-jwt",
         "com.sap.cloud.security.java:api",
@@ -152,14 +149,14 @@ gerrit_plugin_ext_test_deps(
 )
 
 gerrit_plugin_tests(
-    name = "providers_native_tests",
-    srcs = glob(PROVIDERS_NATIVE_TEST_SRCS),
+    name = "providers_tests",
+    srcs = glob(PROVIDERS_TEST_SRCS),
     deps = [
         ":base",
         ":client",
         ":jwt",
-        ":providers-native",
-        ":providers_native_test_deps",
+        ":providers",
+        ":providers_test_deps",
         ":utils",
     ],
 )
@@ -168,7 +165,7 @@ gerrit_plugin_tests(
     name = "oauth_plugin_tests",
     srcs = glob(
         ["src/test/java/**/*.java"],
-        exclude = PROVIDERS_NATIVE_TEST_SRCS,
+        exclude = PROVIDERS_TEST_SRCS,
     ),
     ext_deps = EXT_DEPS,
     plugin = PLUGIN,
@@ -176,7 +173,7 @@ gerrit_plugin_tests(
         ":base",
         ":client",
         ":jwt",
-        ":providers-native",
+        ":providers",
         ":utils",
     ],
 )

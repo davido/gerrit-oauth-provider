@@ -15,18 +15,16 @@
 package com.googlesource.gerrit.plugins.oauth.client;
 
 /**
- * How the native client presents {@code client_id}/{@code client_secret} at the token endpoint --
- * the descriptor equivalent of ScribeJava's {@code ClientAuthentication} strategies. Only the two
- * schemes the providers actually use are modeled (mirroring the Discovery {@code
+ * How the client presents {@code client_id}/{@code client_secret} at the token endpoint. Only the
+ * two schemes the providers actually use are modeled (mirroring the Discovery {@code
  * client-auth-method} knob).
  */
 public enum ClientAuthStyle {
-  /** HTTP Basic ({@code Authorization: Basic base64(id:secret)}). The ScribeJava default. */
+  /** HTTP Basic ({@code Authorization: Basic base64(id:secret)}). The OAuth 2.0 default. */
   BASIC,
   /**
    * {@code client_id}/{@code client_secret} in the form-encoded request body. Used by GitLab,
-   * Keycloak, LemonLDAP, Facebook, and the Discovery {@code client-auth-method = request-body}
-   * option.
+   * Keycloak, Facebook, Azure, and the Discovery {@code client-auth-method = request-body} option.
    */
   REQUEST_BODY
 }

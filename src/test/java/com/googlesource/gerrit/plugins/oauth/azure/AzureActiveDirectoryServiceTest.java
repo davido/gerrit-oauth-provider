@@ -107,7 +107,7 @@ public class AzureActiveDirectoryServiceTest {
 
   @Test
   public void constructor_blankTenant_fallsBackToDefaultTenant() {
-    // A blank tenant must normalize to the default (like Scribe's Azure API did), not produce a
+    // A blank tenant must normalize to the default, not produce a malformed
     // "https://login.microsoftonline.com//oauth2/..." endpoint.
     when(mockPluginConfig.getString(
             OAuthConfigKeys.TENANT, AzureActiveDirectoryService.DEFAULT_TENANT))

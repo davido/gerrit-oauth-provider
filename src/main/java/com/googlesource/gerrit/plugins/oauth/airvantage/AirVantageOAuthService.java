@@ -18,11 +18,14 @@ import static com.google.gerrit.json.OutputFormat.JSON;
 import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
+import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.googlesource.gerrit.plugins.oauth.base.StandardResourceOAuthService;
@@ -43,9 +46,12 @@ public class AirVantageOAuthService extends StandardResourceOAuthService {
   private final String extIdScheme;
 
   @Inject
-  AirVantageOAuthService(HttpOAuthClientFactory clientFactory) {
+  AirVantageOAuthService(
+      OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
     super("AirVantage OAuth2");
-    // Native descriptor: default HTTP Basic client auth, JSON token response, no scope, and the
+    PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: default HTTP Basic client auth, JSON token response, no scope, and the
     // bearer as an access_token query parameter.
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
@@ -56,7 +62,7 @@ public class AirVantageOAuthService extends StandardResourceOAuthService {
             BearerPlacement.URI_QUERY_ACCESS_TOKEN,
             TokenResponseFormat.JSON,
             /* tolerateMissingTokenType= */ false,
-            /* enablePkce= */ false);
+            enablePkce);
     client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }
@@ -72,7 +78,7 @@ public class AirVantageOAuthService extends StandardResourceOAuthService {
     if (userJson.isJsonObject()) {
       JsonObject jsonObject = userJson.getAsJsonObject();
       JsonElement id = jsonObject.get("uid");
-      if (isNull(jsonObject)) {
+      if (isNull(id)) {
         throw new IOException("Response doesn't contain uid field");
       }
       JsonElement email = jsonObject.get("email");

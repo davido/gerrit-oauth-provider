@@ -71,7 +71,7 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
     String clientId =
         requireNonNull(cfg.getString(OAuthConfigKeys.CLIENT_ID), "client-id is required");
     KeycloakApi api = new KeycloakApi(rootUrl, realm);
-    // Native client. Keycloak: request-body client auth, JSON token response, realm-derived
+    // Keycloak: request-body client auth, JSON token response, realm-derived
     // authorize/token URLs, openid scope. It is an id_token provider (no resource GET), so bearer
     // placement is unused; kept as query-param to mirror KeycloakApi, which still supplies the
     // issuer/JWKS URLs for the id_token validator.

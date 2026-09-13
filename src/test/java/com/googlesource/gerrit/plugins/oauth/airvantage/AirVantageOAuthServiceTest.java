@@ -15,18 +15,26 @@
 package com.googlesource.gerrit.plugins.oauth.airvantage;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gerrit.extensions.auth.oauth.OAuthToken;
+import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
+import com.google.gerrit.server.config.PluginConfig;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
 import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
 import com.googlesource.gerrit.plugins.oauth.client.OAuthClient;
 import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
 import com.googlesource.gerrit.plugins.oauth.client.TokenResponseFormat;
+import java.io.IOException;
+import java.net.URI;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,18 +44,22 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AirVantageOAuthServiceTest {
+  @Mock private OAuthPluginConfigFactory mockConfigFactory;
+  @Mock private PluginConfig mockPluginConfig;
   @Mock private HttpOAuthClientFactory mockClientFactory;
   @Mock private OAuthClient mockClient;
 
   @Before
   public void setUp() {
+    when(mockConfigFactory.create(AirVantageOAuthService.PROVIDER_NAME))
+        .thenReturn(mockPluginConfig);
     when(mockClientFactory.create(anyString(), any(OAuthProviderEndpoints.class)))
         .thenReturn(mockClient);
   }
 
   @Test
   public void constructor_buildsAirVantageDescriptor() {
-    new AirVantageOAuthService(mockClientFactory);
+    new AirVantageOAuthService(mockConfigFactory, mockClientFactory);
 
     OAuthProviderEndpoints ep = capturedEndpoints();
     assertThat(ep.authorizationEndpoint())
@@ -59,6 +71,42 @@ public class AirVantageOAuthServiceTest {
     assertThat(ep.tokenResponseFormat()).isEqualTo(TokenResponseFormat.JSON);
     assertThat(ep.tolerateMissingTokenType()).isFalse();
     assertThat(ep.enablePkce()).isFalse();
+  }
+
+  @Test
+  public void constructor_enablePkce_readsFromConfig() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
+
+    new AirVantageOAuthService(mockConfigFactory, mockClientFactory);
+
+    assertThat(capturedEndpoints().enablePkce()).isTrue();
+  }
+
+  @Test
+  public void getUserInfo_mapsUidEmailAndName() throws Exception {
+    when(mockClient.get(any(URI.class), any(OAuthToken.class)))
+        .thenReturn("{\"uid\":\"u-123\",\"email\":\"jane@example.com\",\"name\":\"Jane\"}");
+
+    OAuthUserInfo info =
+        new AirVantageOAuthService(mockConfigFactory, mockClientFactory)
+            .getUserInfo(new OAuthToken("token", "bearer", "raw"));
+
+    assertThat(info.getExternalId()).isEqualTo("airvantage-oauth:u-123");
+    assertThat(info.getEmailAddress()).isEqualTo("jane@example.com");
+    assertThat(info.getDisplayName()).isEqualTo("Jane");
+  }
+
+  @Test
+  public void getUserInfo_missingUid_throwsIOException() throws Exception {
+    // Regression: a response without uid must fail cleanly, not NPE on id.getAsString().
+    when(mockClient.get(any(URI.class), any(OAuthToken.class)))
+        .thenReturn("{\"email\":\"jane@example.com\",\"name\":\"Jane\"}");
+
+    AirVantageOAuthService service =
+        new AirVantageOAuthService(mockConfigFactory, mockClientFactory);
+    OAuthToken token = new OAuthToken("token", "bearer", "raw");
+
+    assertThrows(IOException.class, () -> service.getUserInfo(token));
   }
 
   private OAuthProviderEndpoints capturedEndpoints() {

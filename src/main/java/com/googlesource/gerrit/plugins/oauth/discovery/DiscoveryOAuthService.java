@@ -88,7 +88,7 @@ public class DiscoveryOAuthService extends StandardResourceOAuthService {
     validateDiscoveryDocument(discovery);
 
     boolean enablePKCE = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
-    // Native client. Discovery: endpoints from the fetched OIDC discovery document, the
+    // Discovery: endpoints from the fetched OIDC discovery document, the
     // client-auth-method knob (Basic default or request-body), JSON token response, header-bearer
     // userinfo GET, openid-profile-email scope. It verifies the id_token (raw body) and fetches
     // userinfo, so both HttpOAuthClient paths are exercised.
@@ -128,7 +128,7 @@ public class DiscoveryOAuthService extends StandardResourceOAuthService {
    * Resolves the external-id scheme: the configured value if valid, else the default {@code
    * discovery-oauth}. Blank/unset uses the default; a present-but-disallowed value (not in the
    * allowlist) fails fast because it determines account identity. Lets an operator migrating a
-   * deprecated wrapper (e.g. Auth0) to Discovery keep the wrapper's scheme ({@code auth0-oauth}) so
+   * removed wrapper (e.g. Auth0) to Discovery keep the wrapper's scheme ({@code auth0-oauth}) so
    * existing accounts are not unlinked.
    */
   private static String resolveExternalIdScheme(@Nullable String configured) {
