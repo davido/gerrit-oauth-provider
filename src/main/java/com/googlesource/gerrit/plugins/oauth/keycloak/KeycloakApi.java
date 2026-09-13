@@ -35,6 +35,11 @@ public class KeycloakApi {
     return String.format("%s/realms/%s/protocol/openid-connect/token", rootUrl, realm);
   }
 
+  /** Realm OAuth 2.0 token revocation endpoint (RFC 7009). */
+  public String getRevocationEndpoint() {
+    return String.format("%s/realms/%s/protocol/openid-connect/revoke", rootUrl, realm);
+  }
+
   /** Realm issuer URL — the {@code iss} claim in Keycloak's JWTs. */
   public String getIssuer() {
     return String.format("%s/realms/%s", rootUrl, realm);

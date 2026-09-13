@@ -35,6 +35,7 @@ public class HttpOAuthClientTest {
   private static final String CALLBACK = "https://gerrit.example.com/oauth";
   private static final String AUTHZ = "https://idp.example.com/authorize";
   private static final String TOKEN = "https://idp.example.com/token";
+  private static final String REVOKE = "https://idp.example.com/revoke";
 
   /** Captures the last request the client made through the transport seam. */
   private static final class Captured {
@@ -79,6 +80,107 @@ public class HttpOAuthClientTest {
         return new OAuthHttpTransport.Response(code, responseBody);
       }
     };
+  }
+
+  private static OAuthProviderEndpoints revokable() {
+    return new OAuthProviderEndpoints(
+        AUTHZ,
+        TOKEN,
+        "openid email",
+        ClientAuthStyle.BASIC,
+        BearerPlacement.AUTHORIZATION_HEADER,
+        TokenResponseFormat.JSON,
+        false,
+        false,
+        REVOKE);
+  }
+
+  @Test
+  public void revoke_prefersRefreshToken_postsToRevocationEndpoint() throws Exception {
+    Captured out = new Captured();
+    OAuthToken token =
+        new OAuthToken("access-x", "bearer", "{\"refresh_token\":\"rt-123\"}", 0, "p:x");
+
+    client(revokable(), CLIENT_SECRET, 200, "", out).revoke(token);
+
+    assertThat(out.method).isEqualTo("POST");
+    assertThat(out.url).isEqualTo(REVOKE);
+    assertThat(out.body).contains("token=rt-123");
+    assertThat(out.body).contains("token_type_hint=refresh_token");
+  }
+
+  @Test
+  public void revoke_noRefreshToken_fallsBackToAccessToken() throws Exception {
+    Captured out = new Captured();
+    OAuthToken token = new OAuthToken("access-x", "bearer", "{}", 0, "p:x");
+
+    client(revokable(), CLIENT_SECRET, 200, "", out).revoke(token);
+
+    assertThat(out.body).contains("token=access-x");
+    assertThat(out.body).contains("token_type_hint=access_token");
+  }
+
+  @Test
+  public void revoke_400InvalidToken_isNoOp() throws Exception {
+    Captured out = new Captured();
+    OAuthToken token = new OAuthToken("access-x", "bearer", "{}", 0, "p:x");
+
+    // Google returns 400 invalid_token for an already-invalid token; tolerated as a no-op.
+    client(revokable(), CLIENT_SECRET, 400, "{\"error\":\"invalid_token\"}", out).revoke(token);
+  }
+
+  @Test
+  public void revoke_non2xx_throws() {
+    Captured out = new Captured();
+    OAuthToken token = new OAuthToken("access-x", "bearer", "{}", 0, "p:x");
+
+    assertThrows(
+        IOException.class,
+        () -> client(revokable(), CLIENT_SECRET, 500, "boom", out).revoke(token));
+  }
+
+  @Test
+  public void revoke_noRevocationEndpoint_throwsUnsupported() {
+    Captured out = new Captured();
+    OAuthToken token = new OAuthToken("access-x", "bearer", "{}", 0, "p:x");
+
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> client(standard(ClientAuthStyle.BASIC), CLIENT_SECRET, 200, "", out).revoke(token));
+  }
+
+  @Test
+  public void revoke_requestBodyAuth_includesClientCredentials() throws Exception {
+    // Keycloak uses ClientAuthStyle.REQUEST_BODY: the revoke body must carry
+    // client_id/client_secret.
+    OAuthProviderEndpoints ep =
+        new OAuthProviderEndpoints(
+            AUTHZ,
+            TOKEN,
+            "openid",
+            ClientAuthStyle.REQUEST_BODY,
+            BearerPlacement.AUTHORIZATION_HEADER,
+            TokenResponseFormat.JSON,
+            false,
+            false,
+            REVOKE);
+    Captured out = new Captured();
+    OAuthToken token = new OAuthToken("access-x", "bearer", "{}", 0, "p:x");
+
+    client(ep, CLIENT_SECRET, 200, "", out).revoke(token);
+
+    assertThat(out.body).contains("token=access-x");
+    assertThat(out.body).contains("client_id=" + CLIENT_ID);
+    assertThat(out.body).contains("client_secret=" + CLIENT_SECRET);
+  }
+
+  @Test
+  public void supportsRevoke_reflectsRevocationEndpointPresence() {
+    Captured out = new Captured();
+    assertThat(client(revokable(), CLIENT_SECRET, 200, "", out).supportsRevoke()).isTrue();
+    assertThat(
+            client(standard(ClientAuthStyle.BASIC), CLIENT_SECRET, 200, "", out).supportsRevoke())
+        .isFalse();
   }
 
   @Test

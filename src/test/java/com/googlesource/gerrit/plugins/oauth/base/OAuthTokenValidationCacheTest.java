@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -97,6 +98,62 @@ public class OAuthTokenValidationCacheTest {
     validationCache.put(TOKEN_A, replacement, clock.millis() + 60_000);
 
     assertThat(validationCache.get(TOKEN_A)).hasValue(replacement);
+  }
+
+  @Test
+  public void invalidateForExternalIds_dropsMatchingIdentity_keepsOthers() {
+    OAuthUserInfo bob =
+        new OAuthUserInfo("keycloak-oauth:bob", "bob", "bob@example.com", "Bob", null);
+    validationCache.put(TOKEN_A, USER_INFO, clock.millis() + 60_000); // alice
+    validationCache.put(TOKEN_B, bob, clock.millis() + 60_000); // bob
+
+    validationCache.invalidateForExternalIds(Set.of("keycloak-oauth:alice"));
+
+    assertThat(validationCache.get(TOKEN_A)).isEmpty(); // alice dropped
+    assertThat(validationCache.get(TOKEN_B)).hasValue(bob); // bob untouched
+  }
+
+  @Test
+  public void invalidateForExternalIds_dropsEveryTokenForSameIdentity() {
+    // Two tokens that resolved to the same identity (e.g. the user's own token and a CI token).
+    validationCache.put(TOKEN_A, USER_INFO, clock.millis() + 60_000);
+    validationCache.put(TOKEN_B, USER_INFO, clock.millis() + 60_000);
+
+    validationCache.invalidateForExternalIds(Set.of("keycloak-oauth:alice"));
+
+    assertThat(validationCache.get(TOKEN_A)).isEmpty();
+    assertThat(validationCache.get(TOKEN_B)).isEmpty();
+  }
+
+  @Test
+  public void invalidateForExternalIds_isCaseSensitive() {
+    // OAuth external-id schemes are case-sensitive (unlike username/gerrit), so a case variant
+    // does not match. This mirrors how core stores and resolves the external id.
+    validationCache.put(TOKEN_A, USER_INFO, clock.millis() + 60_000);
+
+    validationCache.invalidateForExternalIds(Set.of("keycloak-oauth:ALICE"));
+
+    assertThat(validationCache.get(TOKEN_A)).hasValue(USER_INFO);
+  }
+
+  @Test
+  public void invalidateForExternalIds_emptySet_isNoOp() {
+    validationCache.put(TOKEN_A, USER_INFO, clock.millis() + 60_000);
+
+    validationCache.invalidateForExternalIds(Set.of());
+
+    assertThat(validationCache.get(TOKEN_A)).hasValue(USER_INFO);
+  }
+
+  @Test
+  public void invalidateAll_dropsEverything() {
+    validationCache.put(TOKEN_A, USER_INFO, clock.millis() + 60_000);
+    validationCache.put(TOKEN_B, USER_INFO, clock.millis() + 60_000);
+
+    validationCache.invalidateAll();
+
+    assertThat(validationCache.get(TOKEN_A)).isEmpty();
+    assertThat(validationCache.get(TOKEN_B)).isEmpty();
   }
 
   private static final class MutableClock extends Clock {

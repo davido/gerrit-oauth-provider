@@ -18,8 +18,10 @@ import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
+import com.google.gerrit.extensions.registration.DynamicSet;
 import com.google.gerrit.server.account.AccountExternalIdCreator;
 import com.google.gerrit.server.account.externalids.ExternalIdFactory;
+import com.google.gerrit.server.auth.oauth.OAuthTokenRevokedListener;
 import com.google.gerrit.server.config.GerritServerConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
@@ -34,6 +36,7 @@ import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthTokenValidationCache;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthTokenValidationCacheCleaner;
 import com.googlesource.gerrit.plugins.oauth.bitbucket.BitbucketOAuthService;
 import com.googlesource.gerrit.plugins.oauth.cas.CasOAuthService;
 import com.googlesource.gerrit.plugins.oauth.dex.DexOAuthService;
@@ -116,6 +119,10 @@ public class Module extends AbstractModule {
     bind(OAuthPluginConfigFactory.class);
     bind(HttpOAuthClientFactory.class);
     install(OAuthTokenValidationCache.module());
+    // Drop cached Git-over-HTTP validations when core revokes a token, so a revoked token stops
+    // being accepted immediately instead of lingering until the validation entry's TTL.
+    DynamicSet.bind(binder(), OAuthTokenRevokedListener.class)
+        .to(OAuthTokenValidationCacheCleaner.class);
     bindServiceProviders();
     bindExternalIdCreators();
     bindOAuthProviders();

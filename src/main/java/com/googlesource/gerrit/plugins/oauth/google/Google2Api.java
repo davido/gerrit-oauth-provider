@@ -28,4 +28,9 @@ public class Google2Api {
   public String getTokenInfoEndpoint() {
     return "https://oauth2.googleapis.com/tokeninfo";
   }
+
+  /** OAuth 2.0 token revocation endpoint (RFC 7009); revoking a refresh token kills the grant. */
+  public String getRevocationEndpoint() {
+    return "https://oauth2.googleapis.com/revoke";
+  }
 }

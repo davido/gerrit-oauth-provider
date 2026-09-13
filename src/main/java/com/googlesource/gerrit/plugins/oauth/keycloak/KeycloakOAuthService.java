@@ -87,7 +87,8 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
             BearerPlacement.URI_QUERY_ACCESS_TOKEN,
             TokenResponseFormat.JSON,
             /* tolerateMissingTokenType= */ false,
-            enablePKCE);
+            enablePKCE,
+            api.getRevocationEndpoint());
     client = clientFactory.create(PROVIDER_NAME, endpoints);
     if (providedValidator != null) {
       this.validator = providedValidator;
@@ -123,5 +124,15 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
   @Override
   public OAuthToken refresh(OAuthToken token) throws IOException {
     return client.refresh(token);
+  }
+
+  @Override
+  public boolean supportsRevoke() {
+    return client.supportsRevoke();
+  }
+
+  @Override
+  public void revoke(OAuthToken token) throws IOException {
+    client.revoke(token);
   }
 }

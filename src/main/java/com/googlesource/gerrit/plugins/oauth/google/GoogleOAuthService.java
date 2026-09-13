@@ -108,7 +108,8 @@ public class GoogleOAuthService extends AbstractOAuthService {
             BearerPlacement.AUTHORIZATION_HEADER,
             TokenResponseFormat.JSON,
             /* tolerateMissingTokenType= */ false,
-            enablePkce);
+            enablePkce,
+            api.getRevocationEndpoint());
     this.client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
 
@@ -255,5 +256,15 @@ public class GoogleOAuthService extends AbstractOAuthService {
   @Override
   public OAuthToken refresh(OAuthToken token) throws IOException {
     return client.refresh(token);
+  }
+
+  @Override
+  public boolean supportsRevoke() {
+    return client.supportsRevoke();
+  }
+
+  @Override
+  public void revoke(OAuthToken token) throws IOException {
+    client.revoke(token);
   }
 }

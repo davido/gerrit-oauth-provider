@@ -41,6 +41,9 @@ import com.google.gerrit.common.Nullable;
  *       instead of failing (CAS).
  *   <li>{@code enablePkce} -- initialize PKCE on the authorization redirect and replay the verifier
  *       on token exchange.
+ *   <li>{@code revocationEndpoint} -- the provider's OAuth 2.0 token revocation endpoint (RFC
+ *       7009), or {@code null} when the provider does not support revocation. Providers that omit
+ *       it use the 8-argument constructor.
  * </ul>
  */
 public record OAuthProviderEndpoints(
@@ -51,7 +54,8 @@ public record OAuthProviderEndpoints(
     BearerPlacement bearerPlacement,
     TokenResponseFormat tokenResponseFormat,
     boolean tolerateMissingTokenType,
-    boolean enablePkce) {
+    boolean enablePkce,
+    @Nullable String revocationEndpoint) {
   public OAuthProviderEndpoints {
     requireNonBlank(authorizationEndpoint, "authorizationEndpoint");
     requireNonBlank(tokenEndpoint, "tokenEndpoint");
@@ -63,6 +67,32 @@ public record OAuthProviderEndpoints(
     if (scope != null && scope.isEmpty()) {
       scope = null;
     }
+    // Same "empty means absent" normalization for the optional revocation endpoint.
+    if (revocationEndpoint != null && revocationEndpoint.isBlank()) {
+      revocationEndpoint = null;
+    }
+  }
+
+  /** Convenience constructor for the providers that do not support token revocation (RFC 7009). */
+  public OAuthProviderEndpoints(
+      String authorizationEndpoint,
+      String tokenEndpoint,
+      @Nullable String scope,
+      ClientAuthStyle clientAuthStyle,
+      BearerPlacement bearerPlacement,
+      TokenResponseFormat tokenResponseFormat,
+      boolean tolerateMissingTokenType,
+      boolean enablePkce) {
+    this(
+        authorizationEndpoint,
+        tokenEndpoint,
+        scope,
+        clientAuthStyle,
+        bearerPlacement,
+        tokenResponseFormat,
+        tolerateMissingTokenType,
+        enablePkce,
+        /* revocationEndpoint= */ null);
   }
 
   private static void requireNonBlank(String value, String field) {

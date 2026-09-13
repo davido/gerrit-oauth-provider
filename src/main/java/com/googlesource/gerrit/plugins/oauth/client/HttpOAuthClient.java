@@ -257,6 +257,51 @@ public class HttpOAuthClient implements OAuthClient {
   }
 
   @Override
+  public boolean supportsRevoke() {
+    return endpoints.revocationEndpoint() != null;
+  }
+
+  @Override
+  public void revoke(OAuthToken token) throws IOException {
+    String revocationEndpoint = endpoints.revocationEndpoint();
+    if (revocationEndpoint == null) {
+      throw new UnsupportedOperationException("Provider has no revocation endpoint configured");
+    }
+    // Prefer the refresh token: revoking it invalidates the whole grant (access + refresh). Google
+    // otherwise revokes only the presented token. Fall back to the access token when offline access
+    // was never granted.
+    String refreshToken = extractRefreshToken(token.getRaw());
+    boolean haveRefresh = refreshToken != null && !refreshToken.isEmpty();
+    String toRevoke = haveRefresh ? refreshToken : token.getToken();
+    if (toRevoke == null || toRevoke.isEmpty()) {
+      throw new IOException("No token available to revoke");
+    }
+    String hint = haveRefresh ? "refresh_token" : "access_token";
+    List<String[]> body = new ArrayList<>();
+    body.add(new String[] {"token", toRevoke});
+    body.add(new String[] {"token_type_hint", hint});
+    // Request-body client auth only (Google's revocation endpoint takes token-only; adding Basic
+    // auth is not required and is omitted to match the verified request shape).
+    addRequestBodyClientAuth(body);
+    logger.atFine().log("OAuth revoke: POST token_type_hint=%s to %s", hint, revocationEndpoint);
+    Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("Content-Type", "application/x-www-form-urlencoded");
+    OAuthHttpTransport.Response response =
+        httpRequest("POST", revocationEndpoint, headers, formEncode(body));
+    // RFC 7009 §2.2: a successful or unnecessary revocation returns 200; an unknown/already-invalid
+    // token is a no-op, which Google signals as 400 invalid_token.
+    if (response.code == 400 && isInvalidToken(response.body)) {
+      logger.atFine().log("OAuth revoke: token already invalid at the IdP (no-op)");
+      return;
+    }
+    if (response.code < 200 || response.code >= 300) {
+      throw new IOException(
+          "Revocation request failed: HTTP " + response.code + " " + safeError(response));
+    }
+    logger.atFine().log("OAuth revoke succeeded (HTTP %d)", response.code);
+  }
+
+  @Override
   public String get(URI resource, OAuthToken token) throws IOException {
     return get(resource, token, Map.of());
   }
@@ -414,6 +459,21 @@ public class HttpOAuthClient implements OAuthClient {
       JsonElement parsed = gson.fromJson(body, JsonElement.class);
       if (parsed != null && parsed.isJsonObject()) {
         return "invalid_grant".equals(asString(parsed.getAsJsonObject().get("error")));
+      }
+    } catch (JsonSyntaxException ignored) {
+      // fall through
+    }
+    return false;
+  }
+
+  private boolean isInvalidToken(@Nullable String body) {
+    if (body == null) {
+      return false;
+    }
+    try {
+      JsonElement parsed = gson.fromJson(body, JsonElement.class);
+      if (parsed != null && parsed.isJsonObject()) {
+        return "invalid_token".equals(asString(parsed.getAsJsonObject().get("error")));
       }
     } catch (JsonSyntaxException ignored) {
       // fall through

@@ -26,7 +26,11 @@ import com.google.inject.name.Named;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +105,40 @@ public class OAuthTokenValidationCache {
     if (log.isDebugEnabled()) {
       log.debug(
           "{} PUT token={} tokenExpiresAt={}", CACHE_NAME, tokenTag(key), tokenExpiresAtMillis);
+    }
+  }
+
+  /**
+   * Invalidates every cached validation whose resolved identity ({@link
+   * OAuthUserInfo#getExternalId}) is in {@code externalIds}. Used on the (rare) revocation path: a
+   * single scan, no hot-path index.
+   */
+  public void invalidateForExternalIds(Set<String> externalIds) {
+    if (externalIds.isEmpty()) {
+      return;
+    }
+    List<String> toDrop = new ArrayList<>();
+    for (Map.Entry<String, Entry> e : cache.asMap().entrySet()) {
+      String externalId = e.getValue().userInfo.getExternalId();
+      if (externalId != null && externalIds.contains(externalId)) {
+        toDrop.add(e.getKey());
+      }
+    }
+    cache.invalidateAll(toDrop);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "{} invalidated {} entr(ies) for {} external id(s)",
+          CACHE_NAME,
+          toDrop.size(),
+          externalIds.size());
+    }
+  }
+
+  /** Drops every cached validation (bulk revocation / site compromise). */
+  public void invalidateAll() {
+    cache.invalidateAll();
+    if (log.isDebugEnabled()) {
+      log.debug("{} INVALIDATE ALL", CACHE_NAME);
     }
   }
 

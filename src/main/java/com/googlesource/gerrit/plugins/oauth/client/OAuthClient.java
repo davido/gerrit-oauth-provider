@@ -64,6 +64,21 @@ public interface OAuthClient {
   OAuthToken refresh(OAuthToken expiredToken) throws IOException;
 
   /**
+   * Revokes a token at the identity provider (OAuth 2.0 Token Revocation, RFC 7009 §2.1) by POSTing
+   * it to the provider's configured {@code revocationEndpoint}. Prefers the refresh token carried
+   * in {@code token.getRaw()} (revoking it invalidates the whole grant); falls back to the access
+   * token. Per RFC 7009 §2.2 an unknown or already-invalid token is a successful no-op.
+   *
+   * @param token the token whose grant should be revoked
+   * @throws IOException on a transient IdP/network failure
+   * @throws UnsupportedOperationException if the provider has no revocation endpoint configured
+   */
+  void revoke(OAuthToken token) throws IOException;
+
+  /** Whether a revocation endpoint is configured, i.e. {@link #revoke} is usable. */
+  boolean supportsRevoke();
+
+  /**
    * Fetches a protected resource with the given token.
    *
    * @return the response body; throws if the provider did not return success.
