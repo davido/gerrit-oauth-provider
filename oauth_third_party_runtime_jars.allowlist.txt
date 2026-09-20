@@ -10,6 +10,11 @@ java-sap-service-operator
 java-sap-vcap-services
 java-security
 json
+libbase
+libclient
+libjwt
+libproviders-native
+libutils
 nimbus-jose-jwt
 scribejava-apis
 scribejava-core
