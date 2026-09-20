@@ -68,6 +68,7 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
   private final String clientId;
   private final AzureUserInfoMapper userInfoMapper;
   @Nullable private final OidcJwtValidator validator;
+  private final boolean refreshEnabled;
 
   @Inject
   AzureActiveDirectoryService(
@@ -97,6 +98,7 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
             useEmailAsUsername,
             linkOffice365Id);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    this.refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
     // Descriptor: request-body client auth (Azure v2.0 expects client_secret in the token
     // request body), JSON token response, header bearer, tenant-scoped v2.0 endpoints. The Graph
     // /me fetch and its Accept header live in getUserInfo below; the id_token is validated there
@@ -226,5 +228,15 @@ public class AzureActiveDirectoryService extends AbstractOAuthService {
     } catch (IOException e) {
       throw new IllegalStateException("Invalid token payload encoding", e);
     }
+  }
+
+  @Override
+  public boolean supportsRefresh() {
+    return refreshEnabled;
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken token) throws IOException {
+    return client.refresh(token);
   }
 }

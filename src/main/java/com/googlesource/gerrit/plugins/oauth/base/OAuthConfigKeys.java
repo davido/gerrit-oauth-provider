@@ -26,6 +26,8 @@ public final class OAuthConfigKeys {
   public static final String ENABLE_GIT_OVER_HTTP = "enable-git-over-http";
   public static final String REQUIRED_SCOPE = "required-scope";
   public static final String ENABLE_PKCE = "enable-pkce";
+  public static final String ENABLE_TOKEN_REFRESH = "enable-token-refresh";
+  public static final String FORCE_CONSENT = "force-consent";
   public static final String EXTERNAL_ID_SCHEME = "external-id-scheme";
   public static final String CLIENT_AUTH_METHOD = "client-auth-method";
   public static final String LINK_TO_EXISTING_OPENID_ACCOUNT = "link-to-existing-openid-accounts";

@@ -204,6 +204,48 @@ public class GoogleOAuthServiceTest {
         .isEqualTo("https://accounts.google.com/o/oauth2/auth?x=y&hd=*");
   }
 
+  @Test
+  public void refreshDisabledByDefault() {
+    assertThat(service().supportsRefresh()).isFalse();
+  }
+
+  @Test
+  public void refreshEnabled_appendsAccessTypeOffline_andSupportsRefresh() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+    when(mockClient.getAuthorizationInfo())
+        .thenReturn(
+            new OAuthAuthorizationInfo("https://accounts.google.com/o/oauth2/auth?x=y", "v"));
+
+    GoogleOAuthService svc = service();
+
+    assertThat(svc.supportsRefresh()).isTrue();
+    assertThat(svc.getAuthorizationInfo().getAuthorizationUrl())
+        .isEqualTo("https://accounts.google.com/o/oauth2/auth?x=y&access_type=offline");
+  }
+
+  @Test
+  public void forceConsent_appendsPromptConsent() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.FORCE_CONSENT, false)).thenReturn(true);
+    when(mockClient.getAuthorizationInfo())
+        .thenReturn(
+            new OAuthAuthorizationInfo("https://accounts.google.com/o/oauth2/auth?x=y", "v"));
+
+    assertThat(service().getAuthorizationInfo().getAuthorizationUrl())
+        .isEqualTo(
+            "https://accounts.google.com/o/oauth2/auth?x=y&access_type=offline&prompt=consent");
+  }
+
+  @Test
+  public void refresh_delegatesToClient() throws Exception {
+    OAuthToken expired = new OAuthToken("a", "s", "{}", 1L, "google-oauth:google");
+    OAuthToken refreshed = new OAuthToken("b", "s", "{}", Long.MAX_VALUE, "google-oauth:google");
+    when(mockClient.refresh(expired)).thenReturn(refreshed);
+
+    assertThat(service().refresh(expired)).isEqualTo(refreshed);
+    verify(mockClient).refresh(expired);
+  }
+
   private OAuthProviderEndpoints capturedEndpoints() {
     ArgumentCaptor<OAuthProviderEndpoints> captor =
         ArgumentCaptor.forClass(OAuthProviderEndpoints.class);

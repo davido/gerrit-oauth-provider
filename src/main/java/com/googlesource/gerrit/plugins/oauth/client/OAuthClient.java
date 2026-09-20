@@ -53,6 +53,17 @@ public interface OAuthClient {
   OAuthToken passwordGrant(String username, String password) throws IOException;
 
   /**
+   * Exchanges the refresh token carried in {@code expiredToken.getRaw()} for a fresh access token
+   * (OAuth 2.0 refresh grant, RFC 6749 §6).
+   *
+   * @return a new access token with {@code expiresAt} populated; the prior refresh token is carried
+   *     forward when the response omits one.
+   * @throws OAuthRevokedException when the IdP replies {@code invalid_grant} (revoke the session).
+   * @throws IOException on a transient IdP/network failure (handle by policy, do not revoke).
+   */
+  OAuthToken refresh(OAuthToken expiredToken) throws IOException;
+
+  /**
    * Fetches a protected resource with the given token.
    *
    * @return the response body; throws if the provider did not return success.

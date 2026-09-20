@@ -27,6 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * In-memory cache of successful opaque-token validations, keyed by SHA-256 of the token. An entry
@@ -35,6 +37,7 @@ import java.util.Optional;
 @Singleton
 public class OAuthTokenValidationCache {
   public static final String CACHE_NAME = "oauth_token_validation";
+  private static final Logger log = LoggerFactory.getLogger(OAuthTokenValidationCache.class);
   private static final long DEFAULT_MAX_ENTRIES = 10_000L;
   private static final Duration DEFAULT_HARD_TTL = Duration.ofSeconds(60);
 
@@ -70,11 +73,20 @@ public class OAuthTokenValidationCache {
     String key = hash(bearerToken);
     Entry entry = cache.getIfPresent(key);
     if (entry == null) {
+      if (log.isDebugEnabled()) {
+        log.debug("{} MISS token={}", CACHE_NAME, tokenTag(key));
+      }
       return Optional.empty();
     }
     if (entry.tokenExpiresAtMillis <= clock.millis()) {
       cache.invalidate(key);
+      if (log.isDebugEnabled()) {
+        log.debug("{} MISS (expired, evicted) token={}", CACHE_NAME, tokenTag(key));
+      }
       return Optional.empty();
+    }
+    if (log.isDebugEnabled()) {
+      log.debug("{} HIT token={}", CACHE_NAME, tokenTag(key));
     }
     return Optional.of(entry.userInfo);
   }
@@ -84,11 +96,21 @@ public class OAuthTokenValidationCache {
    * millis, from the IdP); entries are never served past it, regardless of the hard TTL.
    */
   public void put(String bearerToken, OAuthUserInfo userInfo, long tokenExpiresAtMillis) {
-    cache.put(hash(bearerToken), new Entry(userInfo, tokenExpiresAtMillis));
+    String key = hash(bearerToken);
+    cache.put(key, new Entry(userInfo, tokenExpiresAtMillis));
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "{} PUT token={} tokenExpiresAt={}", CACHE_NAME, tokenTag(key), tokenExpiresAtMillis);
+    }
   }
 
   private static String hash(String token) {
     return Hashing.sha256().hashString(token, StandardCharsets.UTF_8).toString();
+  }
+
+  /** A short, non-reversible correlation id for logs (SHA-256 hex prefix; never the raw token). */
+  private static String tokenTag(String key) {
+    return key.substring(0, 12);
   }
 
   static final class Entry {

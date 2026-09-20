@@ -18,8 +18,10 @@ import static com.google.gerrit.json.OutputFormat.JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.gerrit.common.Nullable;
 import com.google.gerrit.extensions.auth.oauth.OAuthAuthorizationInfo;
+import com.google.gerrit.extensions.auth.oauth.OAuthRevokedException;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gson.Gson;
@@ -51,21 +53,39 @@ import java.util.Map;
  * generated per call and returned in {@link OAuthAuthorizationInfo}.
  */
 public class HttpOAuthClient implements OAuthClient {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private final OAuthProviderEndpoints endpoints;
   private final String clientId;
   private final String clientSecret;
   private final String callback;
+  @Nullable private final String providerId;
   private final Gson gson;
   private final SecureRandom secureRandom;
 
   public HttpOAuthClient(
       OAuthProviderEndpoints endpoints, String clientId, String clientSecret, String callback) {
+    this(endpoints, clientId, clientSecret, callback, /* providerId= */ null);
+  }
+
+  /**
+   * @param providerId the {@code "pluginName:exportName"} id stamped into every minted {@link
+   *     OAuthToken}, so core can resolve the issuing provider later for refresh/revoke-on-read; may
+   *     be {@code null} (e.g. in tests).
+   */
+  public HttpOAuthClient(
+      OAuthProviderEndpoints endpoints,
+      String clientId,
+      String clientSecret,
+      String callback,
+      @Nullable String providerId) {
     // Fail fast on missing config: reject a blank client-id or client-secret before any request.
     // Public clients (no secret) would be a separate feature.
     this.endpoints = requireNonNull(endpoints, "endpoints");
     this.clientId = requireNonBlank(clientId, "client-id");
     this.clientSecret = requireNonBlank(clientSecret, "client-secret");
     this.callback = requireNonNull(callback, "callback");
+    this.providerId = providerId;
     this.gson = JSON.newGson();
     this.secureRandom = new SecureRandom();
   }
@@ -135,16 +155,20 @@ public class HttpOAuthClient implements OAuthClient {
   }
 
   private OAuthToken requestToken(List<String[]> body) throws IOException {
-    Map<String, String> headers = new LinkedHashMap<>();
-    headers.put("Content-Type", "application/x-www-form-urlencoded");
-    addBasicClientAuth(headers);
-    OAuthHttpTransport.Response response =
-        httpRequest("POST", endpoints.tokenEndpoint(), headers, formEncode(body));
+    OAuthHttpTransport.Response response = postForm(body);
     if (response.code < 200 || response.code >= 300) {
       throw new IOException(
           "Token endpoint rejected the request: HTTP " + response.code + " " + safeError(response));
     }
     return parseToken(response.body);
+  }
+
+  /** POSTs a form-encoded body to the token endpoint with the configured client authentication. */
+  private OAuthHttpTransport.Response postForm(List<String[]> body) throws IOException {
+    Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("Content-Type", "application/x-www-form-urlencoded");
+    addBasicClientAuth(headers);
+    return httpRequest("POST", endpoints.tokenEndpoint(), headers, formEncode(body));
   }
 
   private void addRequestBodyClientAuth(List<String[]> body) {
@@ -165,10 +189,12 @@ public class HttpOAuthClient implements OAuthClient {
   private OAuthToken parseToken(String body) throws IOException {
     String accessToken;
     String tokenType;
+    Long expiresInSeconds;
     if (endpoints.tokenResponseFormat() == TokenResponseFormat.FORM_URL_ENCODED) {
       Map<String, String> form = parseFormEncoded(body);
       accessToken = form.get("access_token");
       tokenType = form.get("token_type");
+      expiresInSeconds = parseLongOrNull(form.get("expires_in"));
     } else {
       JsonObject json;
       try {
@@ -181,6 +207,7 @@ public class HttpOAuthClient implements OAuthClient {
       }
       accessToken = asString(json.get("access_token"));
       tokenType = asString(json.get("token_type"));
+      expiresInSeconds = asLong(json.get("expires_in"));
     }
     if (accessToken == null || accessToken.isEmpty()) {
       throw new IOException("Token response is missing access_token");
@@ -188,8 +215,45 @@ public class HttpOAuthClient implements OAuthClient {
     if (tokenType == null && endpoints.tolerateMissingTokenType()) {
       tokenType = "";
     }
-    // Preserve the raw response so id_token / expiry consumers keep working.
-    return new OAuthToken(accessToken, tokenType, body);
+    // expires_in is relative seconds; absent means "unknown", which OAuthToken models as MAX_VALUE.
+    long expiresAt =
+        expiresInSeconds == null
+            ? Long.MAX_VALUE
+            : System.currentTimeMillis() + expiresInSeconds * 1000L;
+    // Preserve the raw response so id_token / refresh-token / expiry consumers keep working.
+    return new OAuthToken(accessToken, tokenType, body, expiresAt, providerId);
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken expiredToken) throws IOException {
+    String refreshToken = extractRefreshToken(expiredToken.getRaw());
+    if (refreshToken == null || refreshToken.isEmpty()) {
+      // No refresh token (offline access never granted). Not revocation -- a plain IOException so
+      // the caller treats it as a transient/unsupported case (fail-open by policy), not a logout.
+      throw new IOException("No refresh_token available to refresh the access token");
+    }
+    logger.atFine().log(
+        "OAuth refresh: POST grant_type=refresh_token to %s", endpoints.tokenEndpoint());
+    List<String[]> body = new ArrayList<>();
+    addRequestBodyClientAuth(body);
+    body.add(new String[] {"grant_type", "refresh_token"});
+    body.add(new String[] {"refresh_token", refreshToken});
+    OAuthHttpTransport.Response response = postForm(body);
+    if (response.code == 400 && isInvalidGrant(response.body)) {
+      logger.atFine().log("OAuth refresh rejected with invalid_grant: refresh token revoked");
+      throw new OAuthRevokedException("Refresh token rejected by the IdP (invalid_grant)");
+    }
+    if (response.code < 200 || response.code >= 300) {
+      throw new IOException(
+          "Refresh request failed: HTTP " + response.code + " " + safeError(response));
+    }
+    // Raw-merge: many providers (e.g. Google) omit refresh_token on refresh; carry the prior one
+    // forward so the next refresh still has a token.
+    OAuthToken refreshed = parseToken(mergeRefreshToken(response.body, refreshToken));
+    logger.atFine().log(
+        "OAuth refresh succeeded (HTTP %d): new access token expiresAt=%d",
+        response.code, refreshed.getExpiresAt());
+    return refreshed;
   }
 
   @Override
@@ -302,6 +366,83 @@ public class HttpOAuthClient implements OAuthClient {
   @Nullable
   private static String asString(@Nullable JsonElement e) {
     return e == null || e.isJsonNull() ? null : e.getAsString();
+  }
+
+  /** Reads {@code refresh_token} from a stored raw token response (JSON, then form-encoded). */
+  @Nullable
+  private String extractRefreshToken(@Nullable String raw) {
+    if (raw == null || raw.isEmpty()) {
+      return null;
+    }
+    try {
+      JsonObject json = gson.fromJson(raw, JsonObject.class);
+      if (json != null && json.has("refresh_token")) {
+        return asString(json.get("refresh_token"));
+      }
+    } catch (JsonSyntaxException ignored) {
+      // Not JSON; fall through to form parsing.
+    }
+    return parseFormEncoded(raw).get("refresh_token");
+  }
+
+  /**
+   * If {@code newBody} (JSON) carries no {@code refresh_token}, splice {@code priorRefreshToken}
+   * into it so the stored raw keeps a usable token. A non-JSON body is returned unchanged.
+   */
+  private String mergeRefreshToken(String newBody, String priorRefreshToken) {
+    try {
+      JsonObject json = gson.fromJson(newBody, JsonObject.class);
+      if (json == null) {
+        return newBody;
+      }
+      String present = json.has("refresh_token") ? asString(json.get("refresh_token")) : null;
+      if (present == null || present.isEmpty()) {
+        json.addProperty("refresh_token", priorRefreshToken);
+        return gson.toJson(json);
+      }
+      return newBody;
+    } catch (JsonSyntaxException e) {
+      return newBody;
+    }
+  }
+
+  private boolean isInvalidGrant(@Nullable String body) {
+    if (body == null) {
+      return false;
+    }
+    try {
+      JsonElement parsed = gson.fromJson(body, JsonElement.class);
+      if (parsed != null && parsed.isJsonObject()) {
+        return "invalid_grant".equals(asString(parsed.getAsJsonObject().get("error")));
+      }
+    } catch (JsonSyntaxException ignored) {
+      // fall through
+    }
+    return false;
+  }
+
+  @Nullable
+  private static Long asLong(@Nullable JsonElement e) {
+    if (e == null || e.isJsonNull()) {
+      return null;
+    }
+    try {
+      return e.getAsLong();
+    } catch (NumberFormatException | UnsupportedOperationException ex) {
+      return null;
+    }
+  }
+
+  @Nullable
+  private static Long parseLongOrNull(@Nullable String s) {
+    if (s == null || s.isEmpty()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(s.trim());
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 
   private static String requireNonBlank(String value, String field) {

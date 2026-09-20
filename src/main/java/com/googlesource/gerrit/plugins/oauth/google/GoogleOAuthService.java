@@ -64,6 +64,8 @@ public class GoogleOAuthService extends AbstractOAuthService {
   private final List<String> domains;
   private final boolean useEmailAsUsername;
   private final boolean fixLegacyUserId;
+  private final boolean refreshEnabled;
+  private final boolean forceConsent;
   private final String extIdScheme;
   @Nullable private final OidcJwtValidator idTokenValidator;
 
@@ -88,6 +90,8 @@ public class GoogleOAuthService extends AbstractOAuthService {
     fixLegacyUserId = cfg.getBoolean(OAuthConfigKeys.FIX_LEGACY_USER_ID, false);
     this.domains = Arrays.asList(cfg.getStringList(OAuthConfigKeys.DOMAIN));
     this.useEmailAsUsername = cfg.getBoolean(OAuthConfigKeys.USE_EMAIL_AS_USERNAME, false);
+    this.refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
+    this.forceConsent = cfg.getBoolean(OAuthConfigKeys.FORCE_CONSENT, false);
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
     // Google: default HTTP Basic client auth, JSON token response, header-bearer
     // userinfo GET, openid email profile scope. The hosted-domain (hd) authorization parameter is
@@ -228,9 +232,28 @@ public class GoogleOAuthService extends AbstractOAuthService {
     } else if (domains.size() > 1) {
       urlBuilder.append("&hd=*");
     }
+    if (refreshEnabled) {
+      // Google issues a refresh_token only when access_type=offline is requested. prompt=consent
+      // forces re-issuance (Google returns a refresh_token only on first consent).
+      urlBuilder.append("&access_type=offline");
+      if (forceConsent) {
+        urlBuilder.append("&prompt=consent");
+      }
+    }
     if (log.isDebugEnabled()) {
       log.debug("OAuth2: authorization URL={}", urlBuilder);
     }
     return new OAuthAuthorizationInfo(urlBuilder.toString(), info.getPkceVerifier());
+  }
+
+  @Override
+  public boolean supportsRefresh() {
+    // Refreshable only when configured to request a refresh token (enable-token-refresh).
+    return refreshEnabled;
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken token) throws IOException {
+    return client.refresh(token);
   }
 }

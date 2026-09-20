@@ -18,6 +18,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gerrit.common.Nullable;
+import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonObject;
@@ -45,6 +46,7 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
   public static final String PROVIDER_NAME = "keycloak";
   private final OidcJwtValidator validator;
   private final KeycloakUserInfoMapper userInfoMapper;
+  private final boolean refreshEnabled;
 
   @Inject
   KeycloakOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
@@ -68,13 +70,14 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
     String realm = cfg.getString(OAuthConfigKeys.REALM);
     boolean usePreferredUsername = cfg.getBoolean(OAuthConfigKeys.USE_PREFERRED_USERNAME, true);
     boolean enablePKCE = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    this.refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
     String clientId =
         requireNonNull(cfg.getString(OAuthConfigKeys.CLIENT_ID), "client-id is required");
     KeycloakApi api = new KeycloakApi(rootUrl, realm);
-    // Keycloak: request-body client auth, JSON token response, realm-derived
-    // authorize/token URLs, openid scope. It is an id_token provider (no resource GET), so bearer
-    // placement is unused; kept as query-param to mirror KeycloakApi, which still supplies the
-    // issuer/JWKS URLs for the id_token validator.
+    // Keycloak: request-body client auth, JSON token response, realm-derived authorize/token URLs.
+    // id_token provider (no resource GET), so bearer placement is unused; kept as query-param to
+    // mirror KeycloakApi, which still supplies the issuer/JWKS URLs for the id_token validator.
+    // offline_access is not forced; the auth-code flow already returns a session refresh_token.
     OAuthProviderEndpoints endpoints =
         new OAuthProviderEndpoints(
             api.getAuthorizationBaseUrl(),
@@ -110,5 +113,15 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
   @Override
   protected OAuthUserInfo parseClaims(JsonObject claimObject) throws IOException {
     return userInfoMapper.map(claimObject);
+  }
+
+  @Override
+  public boolean supportsRefresh() {
+    return refreshEnabled;
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken token) throws IOException {
+    return client.refresh(token);
   }
 }

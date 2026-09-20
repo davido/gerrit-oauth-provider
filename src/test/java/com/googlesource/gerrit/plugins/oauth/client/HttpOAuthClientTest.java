@@ -19,6 +19,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthAuthorizationInfo;
+import com.google.gerrit.extensions.auth.oauth.OAuthRevokedException;
 import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import java.io.IOException;
@@ -425,5 +426,159 @@ public class HttpOAuthClientTest {
 
   private static OAuthToken token(String accessToken) {
     return new OAuthToken(accessToken, "bearer", "{}");
+  }
+
+  @Test
+  public void parseToken_stampsProviderId() throws Exception {
+    HttpOAuthClient client =
+        new HttpOAuthClient(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            CALLBACK,
+            "gerrit-oauth-provider:google-oauth") {
+          @Override
+          OAuthHttpTransport.Response httpRequest(
+              String method, String url, Map<String, String> headers, String body) {
+            return new OAuthHttpTransport.Response(
+                200, "{\"access_token\":\"at\",\"token_type\":\"bearer\"}");
+          }
+        };
+
+    OAuthToken token = client.exchangeCode(new OAuthVerifier("code"), null);
+
+    assertThat(token.getProviderId()).isEqualTo("gerrit-oauth-provider:google-oauth");
+  }
+
+  @Test
+  public void parseToken_populatesExpiresAtFromExpiresIn() throws Exception {
+    Captured c = new Captured();
+    HttpOAuthClient client =
+        client(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_SECRET,
+            200,
+            "{\"access_token\":\"at-1\",\"token_type\":\"bearer\",\"expires_in\":3600}",
+            c);
+
+    long before = System.currentTimeMillis();
+    OAuthToken t = client.exchangeCode(new OAuthVerifier("code"), null);
+
+    assertThat(t.getExpiresAt()).isNotEqualTo(Long.MAX_VALUE);
+    assertThat(t.getExpiresAt()).isAtLeast(before + 3590_000L);
+    assertThat(t.getExpiresAt()).isAtMost(System.currentTimeMillis() + 3600_000L);
+  }
+
+  @Test
+  public void parseToken_noExpiresIn_leavesExpiresAtUnknown() throws Exception {
+    Captured c = new Captured();
+    HttpOAuthClient client =
+        client(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_SECRET,
+            200,
+            "{\"access_token\":\"at-1\",\"token_type\":\"bearer\"}",
+            c);
+
+    OAuthToken t = client.exchangeCode(new OAuthVerifier("code"), null);
+
+    assertThat(t.getExpiresAt()).isEqualTo(Long.MAX_VALUE);
+  }
+
+  @Test
+  public void refresh_sendsRefreshGrant_reusesClientAuthStyle_populatesExpiry() throws Exception {
+    Captured c = new Captured();
+    HttpOAuthClient client =
+        client(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_SECRET,
+            200,
+            "{\"access_token\":\"at-new\",\"token_type\":\"bearer\",\"expires_in\":3600}",
+            c);
+
+    OAuthToken refreshed =
+        client.refresh(
+            new OAuthToken(
+                "at-old",
+                "bearer",
+                "{\"access_token\":\"at-old\",\"refresh_token\":\"r-1\"}",
+                0L,
+                "gerrit-oauth-provider:test-oauth"));
+
+    assertThat(c.method).isEqualTo("POST");
+    assertThat(c.url).isEqualTo(TOKEN);
+    assertThat(c.body).contains("grant_type=refresh_token");
+    assertThat(c.body).contains("refresh_token=r-1");
+    // Basic client auth: credentials in the header, never the body.
+    assertThat(c.headers).containsKey("Authorization");
+    assertThat(c.body).doesNotContain("client_secret=");
+    assertThat(refreshed.getToken()).isEqualTo("at-new");
+    assertThat(refreshed.getExpiresAt()).isNotEqualTo(Long.MAX_VALUE);
+  }
+
+  @Test
+  public void refresh_responseOmitsRefreshToken_mergesPriorOne() throws Exception {
+    Captured c = new Captured();
+    HttpOAuthClient client =
+        client(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_SECRET,
+            200,
+            // Google commonly omits refresh_token on refresh.
+            "{\"access_token\":\"at-new\",\"token_type\":\"bearer\",\"expires_in\":3600}",
+            c);
+
+    OAuthToken refreshed =
+        client.refresh(
+            new OAuthToken("at-old", "bearer", "{\"refresh_token\":\"r-keep\"}", 0L, "p:e-oauth"));
+
+    // The prior refresh token is carried forward into the new raw (raw-merge).
+    assertThat(refreshed.getRaw()).contains("r-keep");
+    assertThat(refreshed.getRaw()).contains("refresh_token");
+  }
+
+  @Test
+  public void refresh_invalidGrant_throwsOAuthRevoked() {
+    Captured c = new Captured();
+    HttpOAuthClient client =
+        client(
+            standard(ClientAuthStyle.BASIC),
+            CLIENT_SECRET,
+            400,
+            "{\"error\":\"invalid_grant\"}",
+            c);
+
+    assertThrows(
+        OAuthRevokedException.class,
+        () ->
+            client.refresh(
+                new OAuthToken("at", "bearer", "{\"refresh_token\":\"r-1\"}", 0L, "p:e-oauth")));
+  }
+
+  @Test
+  public void refresh_missingRefreshToken_throwsIOExceptionNotRevoked() {
+    Captured c = new Captured();
+    HttpOAuthClient client = client(standard(ClientAuthStyle.BASIC), CLIENT_SECRET, 200, "{}", c);
+
+    IOException e =
+        assertThrows(
+            IOException.class,
+            () -> client.refresh(new OAuthToken("at", "bearer", "{}", 0L, "p:e-oauth")));
+    assertThat(e).isNotInstanceOf(OAuthRevokedException.class);
+  }
+
+  @Test
+  public void refresh_transientError_throwsIOExceptionNotRevoked() {
+    Captured c = new Captured();
+    HttpOAuthClient client = client(standard(ClientAuthStyle.BASIC), CLIENT_SECRET, 500, "oops", c);
+
+    IOException e =
+        assertThrows(
+            IOException.class,
+            () ->
+                client.refresh(
+                    new OAuthToken(
+                        "at", "bearer", "{\"refresh_token\":\"r-1\"}", 0L, "p:e-oauth")));
+    assertThat(e).isNotInstanceOf(OAuthRevokedException.class);
   }
 }

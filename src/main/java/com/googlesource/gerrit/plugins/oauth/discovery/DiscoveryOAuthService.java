@@ -67,6 +67,7 @@ public class DiscoveryOAuthService extends StandardResourceOAuthService {
   private final String userinfoEndpoint;
   private final DiscoveryUserInfoMapper userInfoMapper;
   @Nullable private final OidcJwtValidator validator;
+  private final boolean refreshEnabled;
 
   @Inject
   DiscoveryOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
@@ -88,6 +89,7 @@ public class DiscoveryOAuthService extends StandardResourceOAuthService {
     validateDiscoveryDocument(discovery);
 
     boolean enablePKCE = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    this.refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
     // Discovery: endpoints from the fetched OIDC discovery document, the
     // client-auth-method knob (Basic default or request-body), JSON token response, header-bearer
     // userinfo GET, openid-profile-email scope. It verifies the id_token (raw body) and fetches
@@ -338,5 +340,15 @@ public class DiscoveryOAuthService extends StandardResourceOAuthService {
       return userInfoMapper.mapForBrowser(userJson.getAsJsonObject());
     }
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
+  }
+
+  @Override
+  public boolean supportsRefresh() {
+    return refreshEnabled;
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken token) throws IOException {
+    return client.refresh(token);
   }
 }

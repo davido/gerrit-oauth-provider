@@ -16,6 +16,7 @@ package com.googlesource.gerrit.plugins.oauth.gitlab;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
 
+import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonElement;
@@ -43,6 +44,7 @@ public class GitLabOAuthService extends StandardResourceOAuthService {
   public static final String PROVIDER_NAME = "gitlab";
   private final String rootUrl;
   private final GitLabUserInfoMapper userInfoMapper;
+  private final boolean refreshEnabled;
 
   @Inject
   GitLabOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
@@ -53,6 +55,7 @@ public class GitLabOAuthService extends StandardResourceOAuthService {
       throw new ProvisionException("Root URL must be absolute URL");
     }
     boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
     // GitLab: request-body client auth, JSON token response, no scope, and an
     // Authorization-header bearer on the /api/v4/user resource GET. GitLabApi still supplies the
     // authorize/token URLs. The Git-over-HTTP token/info validator is unaffected.
@@ -81,5 +84,15 @@ public class GitLabOAuthService extends StandardResourceOAuthService {
   protected OAuthUserInfo parseUserInfo(String body) throws IOException {
     JsonElement userJson = JSON.newGson().fromJson(body, JsonElement.class);
     return userInfoMapper.map(userJson.getAsJsonObject());
+  }
+
+  @Override
+  public boolean supportsRefresh() {
+    return refreshEnabled;
+  }
+
+  @Override
+  public OAuthToken refresh(OAuthToken token) throws IOException {
+    return client.refresh(token);
   }
 }

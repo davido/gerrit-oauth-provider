@@ -270,6 +270,30 @@ public class DiscoveryOAuthServiceTest {
   }
 
   @Test
+  public void refreshDisabledByDefault() {
+    assertThat(createServiceWithDiscoveryDoc(validDiscoveryDocument()).supportsRefresh()).isFalse();
+  }
+
+  @Test
+  public void refreshEnabled_supportsRefresh() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+
+    assertThat(createServiceWithDiscoveryDoc(validDiscoveryDocument()).supportsRefresh()).isTrue();
+  }
+
+  @Test
+  public void refresh_delegatesToClient() throws Exception {
+    OAuthToken expired = new OAuthToken("a", "s", "{}", 1L, "discovery-oauth:discovery");
+    OAuthToken refreshed =
+        new OAuthToken("b", "s", "{}", Long.MAX_VALUE, "discovery-oauth:discovery");
+    when(mockClient.refresh(expired)).thenReturn(refreshed);
+
+    assertThat(createServiceWithDiscoveryDoc(validDiscoveryDocument()).refresh(expired))
+        .isEqualTo(refreshed);
+    verify(mockClient).refresh(expired);
+  }
+
+  @Test
   public void constructor_defaultClientAuth_usesBasic() {
     createServiceWithDiscoveryDoc(validDiscoveryDocument());
 

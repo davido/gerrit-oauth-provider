@@ -88,6 +88,28 @@ public class GitLabOAuthServiceTest {
     assertThat(capturedEndpoints().enablePkce()).isFalse();
   }
 
+  @Test
+  public void refreshDisabledByDefault() {
+    assertThat(service().supportsRefresh()).isFalse();
+  }
+
+  @Test
+  public void refreshEnabled_supportsRefresh() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+
+    assertThat(service().supportsRefresh()).isTrue();
+  }
+
+  @Test
+  public void refresh_delegatesToClient() throws Exception {
+    OAuthToken expired = new OAuthToken("a", "s", "{}", 1L, "gitlab-oauth:gitlab");
+    OAuthToken refreshed = new OAuthToken("b", "s", "{}", Long.MAX_VALUE, "gitlab-oauth:gitlab");
+    when(mockClient.refresh(expired)).thenReturn(refreshed);
+
+    assertThat(service().refresh(expired)).isEqualTo(refreshed);
+    verify(mockClient).refresh(expired);
+  }
+
   private OAuthProviderEndpoints capturedEndpoints() {
     ArgumentCaptor<OAuthProviderEndpoints> captor =
         ArgumentCaptor.forClass(OAuthProviderEndpoints.class);

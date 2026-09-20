@@ -52,7 +52,7 @@ public class GithubApiUrlTest {
         .thenReturn(pluginConfig.asPluginConfig());
 
     HttpOAuthClientFactory serviceFactory =
-        new HttpOAuthClientFactory(oauthPluginConfigFactoryMock, CANONICAL_URL);
+        new HttpOAuthClientFactory(oauthPluginConfigFactoryMock, CANONICAL_URL, PLUGIN_NAME);
     return new GitHubOAuthService(
         oauthPluginConfigFactoryMock,
         serviceFactory,

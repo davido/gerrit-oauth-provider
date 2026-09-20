@@ -127,6 +127,28 @@ public class AzureActiveDirectoryServiceTest {
   }
 
   @Test
+  public void refreshDisabledByDefault() {
+    assertThat(fixedTenantService().supportsRefresh()).isFalse();
+  }
+
+  @Test
+  public void refreshEnabled_supportsRefresh() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+
+    assertThat(fixedTenantService().supportsRefresh()).isTrue();
+  }
+
+  @Test
+  public void refresh_delegatesToClient() throws Exception {
+    OAuthToken expired = new OAuthToken("a", "s", "{}", 1L, "azure-oauth:azure");
+    OAuthToken refreshed = new OAuthToken("b", "s", "{}", Long.MAX_VALUE, "azure-oauth:azure");
+    when(mockClient.refresh(expired)).thenReturn(refreshed);
+
+    assertThat(fixedTenantService().refresh(expired)).isEqualTo(refreshed);
+    verify(mockClient).refresh(expired);
+  }
+
+  @Test
   public void constructor_buildsAzureDescriptor() {
     when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
 

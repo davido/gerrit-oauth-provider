@@ -179,6 +179,35 @@ public class KeycloakOAuthServiceTest {
     assertThat(ep.enablePkce()).isTrue();
   }
 
+  @Test
+  public void refreshDisabledByDefault() {
+    assertThat(service().supportsRefresh()).isFalse();
+  }
+
+  @Test
+  public void refreshEnabled_supportsRefresh_keepsOpenidScope() {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false)).thenReturn(true);
+
+    KeycloakOAuthService svc = service();
+
+    ArgumentCaptor<OAuthProviderEndpoints> captor =
+        ArgumentCaptor.forClass(OAuthProviderEndpoints.class);
+    verify(mockServiceFactory).create(eq(KeycloakOAuthService.PROVIDER_NAME), captor.capture());
+    assertThat(captor.getValue().scope()).isEqualTo("openid");
+    assertThat(svc.supportsRefresh()).isTrue();
+  }
+
+  @Test
+  public void refresh_delegatesToClient() throws Exception {
+    OAuthToken expired = new OAuthToken("a", "s", "{}", 1L, "keycloak-oauth:keycloak");
+    OAuthToken refreshed =
+        new OAuthToken("b", "s", "{}", Long.MAX_VALUE, "keycloak-oauth:keycloak");
+    when(mockClient.refresh(expired)).thenReturn(refreshed);
+
+    assertThat(service().refresh(expired)).isEqualTo(refreshed);
+    verify(mockClient).refresh(expired);
+  }
+
   private KeycloakOAuthService service() {
     OidcJwtValidator validator =
         OidcJwtValidator.builder().issuer(ISSUER).audience(CLIENT_ID).jwkSource(jwks).build();

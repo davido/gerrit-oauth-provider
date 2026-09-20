@@ -14,6 +14,7 @@
 
 package com.googlesource.gerrit.plugins.oauth.base;
 
+import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.inject.Inject;
@@ -29,24 +30,32 @@ import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
 public class HttpOAuthClientFactory {
   private final OAuthPluginConfigFactory cfgFactory;
   private final String canonicalWebUrl;
+  private final String pluginName;
 
   @Inject
   public HttpOAuthClientFactory(
-      OAuthPluginConfigFactory cfgFactory, @CanonicalWebUrl String canonicalWebUrl) {
+      OAuthPluginConfigFactory cfgFactory,
+      @CanonicalWebUrl String canonicalWebUrl,
+      @PluginName String pluginName) {
     this.cfgFactory = cfgFactory;
     this.canonicalWebUrl = canonicalWebUrl;
+    this.pluginName = pluginName;
   }
 
   /**
    * client-id/client-secret come from the provider's config and the callback from the canonical web
-   * URL.
+   * URL. The {@code providerId} ({@code pluginName:exportName}) is stamped into minted tokens so
+   * core can resolve the issuing provider later for refresh/revoke-on-read.
    */
   public OAuthClient create(String providerName, OAuthProviderEndpoints endpoints) {
     PluginConfig cfg = cfgFactory.create(providerName);
+    String providerId =
+        pluginName + ":" + OAuthServiceProviderExternalIdScheme.create(providerName);
     return new HttpOAuthClient(
         endpoints,
         cfg.getString(OAuthConfigKeys.CLIENT_ID),
         cfg.getString(OAuthConfigKeys.CLIENT_SECRET),
-        canonicalWebUrl + "oauth");
+        canonicalWebUrl + "oauth",
+        providerId);
   }
 }
