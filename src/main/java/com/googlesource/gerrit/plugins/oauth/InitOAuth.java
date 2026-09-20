@@ -12,8 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 package com.googlesource.gerrit.plugins.oauth;
-import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.CLIENT_AUTH_METHOD;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.CLIENT_ID;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.CLIENT_SECRET;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_GIT_OVER_HTTP;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_PKCE;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.FIX_LEGACY_USER_ID;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.REALM;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ROOT_URL;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.TENANT;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.Strings;
@@ -28,6 +37,7 @@ import com.googlesource.gerrit.plugins.oauth.airvantage.AirVantageOAuthService;
 import com.googlesource.gerrit.plugins.oauth.auth0.Auth0OAuthService;
 import com.googlesource.gerrit.plugins.oauth.authentik.AuthentikOAuthService;
 import com.googlesource.gerrit.plugins.oauth.azure.AzureActiveDirectoryService;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import com.googlesource.gerrit.plugins.oauth.bitbucket.BitbucketOAuthService;
 import com.googlesource.gerrit.plugins.oauth.cas.CasOAuthService;
 import com.googlesource.gerrit.plugins.oauth.cognito.CognitoOAuthService;
@@ -46,21 +56,6 @@ import java.net.URI;
 
 public class InitOAuth implements InitStep {
   static final String PLUGIN_SECTION = "plugin";
-  public static final String CLIENT_ID = "client-id";
-  public static final String CLIENT_SECRET = "client-secret";
-  public static final String ENABLE_PKCE = "enable-pkce";
-  public static final String LINK_TO_EXISTING_OPENID_ACCOUNT = "link-to-existing-openid-accounts";
-  public static final String FIX_LEGACY_USER_ID = "fix-legacy-user-id";
-  public static final String DOMAIN = "domain";
-  public static final String USE_EMAIL_AS_USERNAME = "use-email-as-username";
-  public static final String USE_PREFERRED_USERNAME = "use-preferred-username";
-  public static final String ROOT_URL = "root-url";
-  public static final String REALM = "realm";
-  public static final String TENANT = "tenant";
-  public static final String LINK_TO_EXISTING_OFFICE365_ACCOUNT =
-      "link-to-existing-office365-accounts";
-  public static final String LINK_TO_EXISTING_GERRIT_ACCOUNT = "link-to-existing-gerrit-accounts";
-  public static final String SERVICE_NAME = "service-name";
   static String FIX_LEGACY_USER_ID_QUESTION = "Fix legacy user id, without oauth provider prefix?";
 
   private final ConsoleUI ui;
@@ -121,6 +116,10 @@ public class InitOAuth implements InitStep {
             "Use Google OAuth provider for Gerrit login?");
     if (configureGoogleOAuthProvider && configureOAuth(googleOAuthProviderSection)) {
       googleOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
+      googleOAuthProviderSection.string(
+          "Enable PKCE for Google OAuth provider?", ENABLE_PKCE, "false");
+      googleOAuthProviderSection.string(
+          "Enable Git-over-HTTP for Google OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
 
     boolean configueGitHubOAuthProvider =
@@ -129,6 +128,10 @@ public class InitOAuth implements InitStep {
             "Use GitHub OAuth provider for Gerrit login?");
     if (configueGitHubOAuthProvider && configureOAuth(githubOAuthProviderSection)) {
       githubOAuthProviderSection.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
+      githubOAuthProviderSection.string(
+          "Enable PKCE for GitHub OAuth provider?", ENABLE_PKCE, "false");
+      githubOAuthProviderSection.string(
+          "Enable Git-over-HTTP for GitHub OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
 
     boolean configureBitbucketOAuthProvider =
@@ -161,6 +164,10 @@ public class InitOAuth implements InitStep {
             "Use GitLab OAuth provider for Gerrit login?");
     if (configureGitLabOAuthProvider && configureOAuth(gitlabOAuthProviderSection)) {
       checkRootUrl(gitlabOAuthProviderSection.string("GitLab Root URL", ROOT_URL, null));
+      gitlabOAuthProviderSection.string(
+          "Enable PKCE for GitLab OAuth provider?", ENABLE_PKCE, "false");
+      gitlabOAuthProviderSection.string(
+          "Enable Git-over-HTTP for GitLab OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
 
     boolean configureIASOAuthProvider =
@@ -170,6 +177,8 @@ public class InitOAuth implements InitStep {
       checkRootUrl(iasOAuthProviderSection.string("SAP IAS Root URL", ROOT_URL, null));
       iasOAuthProviderSection.string(
           "Enable PKCE for SAP IAS OAuth provider?", ENABLE_PKCE, "false");
+      iasOAuthProviderSection.string(
+          "Enable Git-over-HTTP for SAP IAS OAuth provider?", ENABLE_GIT_OVER_HTTP, "true");
     }
 
     boolean configureLemonLDAPOAuthProvider =
@@ -185,6 +194,7 @@ public class InitOAuth implements InitStep {
         ui.yesno(isConfigured(dexOAuthProviderSection), "Use Dex OAuth provider for Gerrit login?");
     if (configureDexOAuthProvider && configureOAuth(dexOAuthProviderSection)) {
       checkRootUrl(dexOAuthProviderSection.string("Dex Root URL", ROOT_URL, null));
+      dexOAuthProviderSection.string("Enable PKCE for Dex OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configureKeycloakOAuthProvider =
@@ -194,6 +204,10 @@ public class InitOAuth implements InitStep {
     if (configureKeycloakOAuthProvider && configureOAuth(keycloakOAuthProviderSection)) {
       checkRootUrl(keycloakOAuthProviderSection.string("Keycloak Root URL", ROOT_URL, null));
       keycloakOAuthProviderSection.string("Keycloak Realm", REALM, null);
+      keycloakOAuthProviderSection.string(
+          "Enable PKCE for Keycloak OAuth provider?", ENABLE_PKCE, "false");
+      keycloakOAuthProviderSection.string(
+          "Enable Git-over-HTTP for Keycloak OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
 
     boolean configureAzureActiveDirectoryAuthProvider =
@@ -204,6 +218,10 @@ public class InitOAuth implements InitStep {
       configureOAuth(azureActiveDirectoryAuthProviderSection);
       azureActiveDirectoryAuthProviderSection.string(
           "Tenant", TENANT, AzureActiveDirectoryService.DEFAULT_TENANT);
+      azureActiveDirectoryAuthProviderSection.string(
+          "Enable PKCE for Azure OAuth provider?", ENABLE_PKCE, "false");
+      azureActiveDirectoryAuthProviderSection.string(
+          "Enable Git-over-HTTP for Azure OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
 
     boolean configureAirVantageOAuthProvider =
@@ -235,6 +253,8 @@ public class InitOAuth implements InitStep {
             isConfigured(auth0OAuthProviderSection), "Use Auth0 OAuth provider for Gerrit login?");
     if (configureAuth0OAuthProvider && configureOAuth(auth0OAuthProviderSection)) {
       checkRootUrl(auth0OAuthProviderSection.string("Auth0 Root URL", ROOT_URL, null));
+      auth0OAuthProviderSection.string(
+          "Enable PKCE for Auth0 OAuth provider?", ENABLE_PKCE, "false");
     }
 
     boolean configureAuthentikOAuthProvider =
@@ -243,6 +263,8 @@ public class InitOAuth implements InitStep {
             "Use Authentik OAuth provider for Gerrit login?");
     if (configureAuthentikOAuthProvider && configureOAuth(authentikOAuthProviderSection)) {
       checkRootUrl(authentikOAuthProviderSection.string("Authentik Root URL", ROOT_URL, null));
+      authentikOAuthProviderSection.string(
+          "Enable PKCE for Authentik OAuth provider?", ENABLE_PKCE, "false");
       authentikOAuthProviderSection.string(
           "Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
     }
@@ -253,6 +275,8 @@ public class InitOAuth implements InitStep {
             "Use Cognito OAuth provider for Gerrit login?");
     if (configureCognitoOAuthProvider && configureOAuth(cognitoOAuthProviderSection)) {
       checkRootUrl(cognitoOAuthProviderSection.string("Cognito Root URL", ROOT_URL, null));
+      cognitoOAuthProviderSection.string(
+          "Enable PKCE for Cognito OAuth provider?", ENABLE_PKCE, "false");
       cognitoOAuthProviderSection.string(
           "Link to existing Gerrit LDAP accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
     }
@@ -267,6 +291,12 @@ public class InitOAuth implements InitStep {
               "Discovery Root URL(before `/.well-known')", ROOT_URL, null));
       discoveryOAuthProviderSection.string(
           "Enable PKCE for Discovery OAuth provider?", ENABLE_PKCE, "false");
+      discoveryOAuthProviderSection.string(
+          "Enable Git-over-HTTP for Discovery OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
+      discoveryOAuthProviderSection.string(
+          "Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
+      discoveryOAuthProviderSection.string(
+          "Client authentication method (basic or request-body)?", CLIENT_AUTH_METHOD, "basic");
     }
   }
 
