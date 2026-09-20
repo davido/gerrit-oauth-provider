@@ -23,6 +23,8 @@ import com.google.gerrit.server.config.GerritServerConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureModule;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
@@ -55,7 +57,8 @@ public class Module extends AbstractModule {
               DiscoveryOAuthLoginProvider.class, DiscoveryModule::new, false),
           new SupportedLoginProvider(GoogleOAuthLoginProvider.class, GoogleModule::new, false),
           new SupportedLoginProvider(GitHubOAuthLoginProvider.class, GitHubModule::new, false),
-          new SupportedLoginProvider(GitLabOAuthLoginProvider.class, GitLabModule::new, false));
+          new SupportedLoginProvider(GitLabOAuthLoginProvider.class, GitLabModule::new, false),
+          new SupportedLoginProvider(AzureOAuthLoginProvider.class, AzureModule::new, false));
 
   private final List<String> configuredProviders;
   private final ExternalIdFactory externalIdFactory;
