@@ -28,6 +28,8 @@ import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthTokenValidationCache;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryModule;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakModule;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasModule;
@@ -42,7 +44,9 @@ public class Module extends AbstractModule {
       List.of(
           // SAP is grandfathered on; newer providers default off (opt-in via enable-git-over-http).
           new SupportedLoginProvider(SAPIasOAuthLoginProvider.class, SAPIasModule::new, true),
-          new SupportedLoginProvider(KeycloakOAuthLoginProvider.class, KeycloakModule::new, false));
+          new SupportedLoginProvider(KeycloakOAuthLoginProvider.class, KeycloakModule::new, false),
+          new SupportedLoginProvider(
+              DiscoveryOAuthLoginProvider.class, DiscoveryModule::new, false));
 
   private final List<String> configuredProviders;
   private final ExternalIdFactory externalIdFactory;
