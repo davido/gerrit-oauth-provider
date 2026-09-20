@@ -21,8 +21,9 @@ import com.google.gerrit.server.config.PluginConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.oauth.InitOAuth;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.utils.OAuthUrls;
 import com.sap.cloud.security.client.DefaultHttpClientFactory;
 import com.sap.cloud.security.config.ClientCredentials;
 import com.sap.cloud.security.config.OAuth2ServiceConfiguration;
@@ -45,12 +46,13 @@ public class SAPIasTokenValidatorProvider implements Provider<CombiningValidator
   SAPIasTokenValidatorProvider(OAuthPluginConfigFactory cfgFactory) {
     cfg = cfgFactory.create(PROVIDER_NAME);
 
-    List<String> rootUrlParts = Splitter.on('.').splitToList(cfg.getString(InitOAuth.ROOT_URL));
+    String rootUrl = OAuthUrls.trimTrailingSlashes(cfg.getString(OAuthConfigKeys.ROOT_URL));
+    List<String> rootUrlParts = Splitter.on('.').splitToList(rootUrl);
     String universeSubdomain = rootUrlParts.get(rootUrlParts.size() - 3);
     serviceConfiguration =
         OAuth2ServiceConfigurationBuilder.forService(Service.IAS)
-            .withUrl(cfg.getString(InitOAuth.ROOT_URL))
-            .withClientId(cfg.getString(InitOAuth.CLIENT_ID))
+            .withUrl(rootUrl)
+            .withClientId(cfg.getString(OAuthConfigKeys.CLIENT_ID))
             .withDomains(universeSubdomain + ONDEMAND_DOMAIN, universeSubdomain + CLOUD_DOMAIN)
             .build();
   }
@@ -59,7 +61,7 @@ public class SAPIasTokenValidatorProvider implements Provider<CombiningValidator
   public CombiningValidator<Token> get() {
     ClientCredentials clientCredentials =
         new ClientCredentials(
-            cfg.getString(InitOAuth.CLIENT_ID), cfg.getString(InitOAuth.CLIENT_SECRET));
+            cfg.getString(OAuthConfigKeys.CLIENT_ID), cfg.getString(OAuthConfigKeys.CLIENT_SECRET));
     return JwtValidatorBuilder.getInstance(serviceConfiguration)
         .withHttpClient(new DefaultHttpClientFactory().createClient(clientCredentials))
         .build();
