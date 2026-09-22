@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth;
+package com.googlesource.gerrit.plugins.oauth.base;
 
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
@@ -22,7 +22,7 @@ import com.google.inject.Singleton;
 import java.io.IOException;
 
 @Singleton
-class DisabledOAuthLoginProvider implements OAuthLoginProvider {
+public class DisabledOAuthLoginProvider implements OAuthLoginProvider {
   private final String pluginName;
 
   @Inject

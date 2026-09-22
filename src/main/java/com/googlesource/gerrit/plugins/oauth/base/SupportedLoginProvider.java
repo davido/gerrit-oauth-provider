@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth;
+package com.googlesource.gerrit.plugins.oauth.base;
 
 import static java.util.Objects.requireNonNull;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
 import com.google.inject.AbstractModule;
-import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
 import java.util.function.Supplier;
 
-class SupportedLoginProvider {
+public class SupportedLoginProvider {
   private final Class<? extends OAuthLoginProvider> loginProviderClass;
   private final Supplier<AbstractModule> moduleSupplier;
   private final boolean defaultGitOverHttp;
 
-  SupportedLoginProvider(
+  public SupportedLoginProvider(
       Class<? extends OAuthLoginProvider> loginProviderClass,
       Supplier<AbstractModule> moduleSupplier,
       boolean defaultGitOverHttp) {
@@ -46,9 +45,7 @@ class SupportedLoginProvider {
     return moduleSupplier.get();
   }
 
-  /**
-   * Default {@code enable-git-over-http} value: {@code true} for SAP (grandfathered), else false.
-   */
+  /** Default {@code enable-git-over-http} value used when the flag is omitted from config. */
   boolean defaultGitOverHttp() {
     return defaultGitOverHttp;
   }

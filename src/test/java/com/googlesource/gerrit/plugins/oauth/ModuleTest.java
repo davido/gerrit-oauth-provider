@@ -17,13 +17,17 @@ package com.googlesource.gerrit.plugins.oauth;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
+import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.inject.AbstractModule;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Elements;
+import com.googlesource.gerrit.plugins.oauth.base.AbstractOAuthModule;
+import com.googlesource.gerrit.plugins.oauth.base.DisabledOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
 import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
+import com.googlesource.gerrit.plugins.oauth.base.SupportedLoginProvider;
 import java.io.IOException;
 import java.util.List;
 import org.eclipse.jgit.lib.Config;
@@ -95,8 +99,25 @@ public class ModuleTest {
   }
 
   private static String elements(Config cfg) {
-    List<Element> elements = Elements.getElements(new Module(cfg, PLUGIN_NAME, null, PROVIDERS));
+    List<Element> elements = Elements.getElements(new TestModule(cfg));
     return elements.toString();
+  }
+
+  /** Exercises the shared {@link AbstractOAuthModule} wiring with the test {@link #PROVIDERS}. */
+  private static final class TestModule extends AbstractOAuthModule {
+    TestModule(Config cfg) {
+      super(cfg, PLUGIN_NAME, null);
+    }
+
+    @Override
+    protected List<Class<? extends OAuthServiceProvider>> serviceProviders() {
+      return List.of();
+    }
+
+    @Override
+    protected List<SupportedLoginProvider> loginProviders() {
+      return PROVIDERS;
+    }
   }
 
   private static void setClientId(Config cfg, String providerName) {
