@@ -126,6 +126,21 @@ Gerrit core in `tools/bzl/plugins.bzl`, and execute:
   ./tools/eclipse/project.py
 ```
 
+### Single-provider artifacts
+
+Besides the all-inclusive `@PLUGIN@.jar`, the plugin can be built as slimmer,
+single-provider artifacts that bundle only one provider plus the shared core
+libraries. They are optional and do not affect the default build:
+
+```
+  bazel build @PLUGIN@-google @PLUGIN@-github @PLUGIN@-discovery @PLUGIN@-keycloak
+```
+
+(prefix the targets with `plugins/@PLUGIN@:` when building in the Gerrit tree).
+Each artifact registers as the same `gerrit-oauth-provider` plugin and ships its
+own init step, so `gerrit.config` and `init` behave exactly as with the full
+`@PLUGIN@.jar` — deploy only the provider you actually use.
+
 ### Gerrit-tree-only plugin checks
 
 This plugin contains additional guardrail tests that are meaningful only

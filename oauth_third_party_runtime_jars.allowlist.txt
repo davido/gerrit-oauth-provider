@@ -9,7 +9,11 @@ java-security
 json
 libbase
 libclient
+libdiscovery
+libgithub
+libgoogle
 libjwt
+libkeycloak
 libproviders
 libutils
 nimbus-jose-jwt

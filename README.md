@@ -46,6 +46,13 @@ following:
   cd oauth && bazel build oauth
 ```
 
+Besides the all-inclusive `oauth.jar`, the plugin can also be built as slim,
+single-provider artifacts that bundle just one provider plus the shared core —
+for example `bazel build oauth-google` (also `oauth-github`, `oauth-discovery`,
+`oauth-keycloak`). Each registers as the same `gerrit-oauth-provider` plugin and
+ships its own init step; see
+[Documentation/build.md](src/main/resources/Documentation/build.md).
+
 Install
 -------
 
