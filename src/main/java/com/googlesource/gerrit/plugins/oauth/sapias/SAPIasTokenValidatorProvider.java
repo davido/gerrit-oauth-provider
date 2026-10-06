@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth.sap;
+package com.googlesource.gerrit.plugins.oauth.sapias;
 
-import static com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService.PROVIDER_NAME;
+import static com.googlesource.gerrit.plugins.oauth.sapias.SAPIasOAuthService.PROVIDER_NAME;
 
 import com.google.common.base.Splitter;
 import com.google.gerrit.server.config.PluginConfig;

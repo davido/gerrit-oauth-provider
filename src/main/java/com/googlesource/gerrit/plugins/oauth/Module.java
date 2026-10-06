@@ -45,9 +45,6 @@ import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakModule;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthService;
 import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasModule;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthLoginProvider;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
 import java.util.List;
 import org.eclipse.jgit.lib.Config;
 
@@ -56,8 +53,6 @@ public class Module extends AbstractOAuthModule {
 
   private static final List<SupportedLoginProvider> SUPPORTED_LOGIN_PROVIDERS =
       List.of(
-          // SAP is grandfathered on; newer providers default off (opt-in via enable-git-over-http).
-          new SupportedLoginProvider(SAPIasOAuthLoginProvider.class, SAPIasModule::new, true),
           new SupportedLoginProvider(KeycloakOAuthLoginProvider.class, KeycloakModule::new, false),
           new SupportedLoginProvider(
               DiscoveryOAuthLoginProvider.class, DiscoveryModule::new, false),
@@ -79,8 +74,7 @@ public class Module extends AbstractOAuthModule {
           GitLabOAuthService.class,
           GoogleOAuthService.class,
           KeycloakOAuthService.class,
-          PhabricatorOAuthService.class,
-          SAPIasOAuthService.class);
+          PhabricatorOAuthService.class);
 
   @Inject
   public Module(

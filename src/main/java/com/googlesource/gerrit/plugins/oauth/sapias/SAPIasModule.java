@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth.sap;
+package com.googlesource.gerrit.plugins.oauth.sapias;
 
 import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
