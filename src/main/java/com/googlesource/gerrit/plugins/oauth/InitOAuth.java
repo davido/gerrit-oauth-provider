@@ -36,7 +36,6 @@ import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthService;
 import com.googlesource.gerrit.plugins.oauth.google.GoogleInitStep;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakInitStep;
 import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
-import com.googlesource.gerrit.plugins.oauth.sapias.SAPIasOAuthService;
 
 /**
  * All-inclusive {@code oauth} plugin init step. Delegates the providers that also ship as
@@ -82,14 +81,6 @@ public class InitOAuth extends AbstractOAuthInitStep {
       gitlab.string("Enable PKCE for GitLab OAuth provider?", ENABLE_PKCE, "false");
       gitlab.string(
           "Enable Git-over-HTTP for GitLab OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
-    }
-
-    Section ias = getConfigSection(SAPIasOAuthService.class);
-    if (ui.yesno(isConfigured(ias), "Use SAP IAS OAuth provider for Gerrit login?")
-        && configureOAuth(ias)) {
-      checkRootUrl(ias.string("SAP IAS Root URL", ROOT_URL, null));
-      ias.string("Enable PKCE for SAP IAS OAuth provider?", ENABLE_PKCE, "false");
-      ias.string("Enable Git-over-HTTP for SAP IAS OAuth provider?", ENABLE_GIT_OVER_HTTP, "true");
     }
 
     Section dex = getConfigSection(DexOAuthService.class);

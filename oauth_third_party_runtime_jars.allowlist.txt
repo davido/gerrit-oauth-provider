@@ -1,12 +1,3 @@
-env
-java-access-api
-java-api
-java-consumption-api
-java-core-api
-java-sap-service-operator
-java-sap-vcap-services
-java-security
-json
 libbase
 libclient
 libdiscovery
@@ -17,4 +8,3 @@ libkeycloak
 libproviders
 libutils
 nimbus-jose-jwt
-token-client

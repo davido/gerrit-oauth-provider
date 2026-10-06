@@ -133,13 +133,15 @@ single-provider artifacts that bundle only one provider plus the shared core
 libraries. They are optional and do not affect the default build:
 
 ```
-  bazel build @PLUGIN@-google @PLUGIN@-github @PLUGIN@-discovery @PLUGIN@-keycloak
+  bazel build @PLUGIN@-google @PLUGIN@-github @PLUGIN@-discovery @PLUGIN@-keycloak @PLUGIN@-sapias
 ```
 
 (prefix the targets with `plugins/@PLUGIN@:` when building in the Gerrit tree).
 Each artifact registers as the same `gerrit-oauth-provider` plugin and ships its
 own init step, so `gerrit.config` and `init` behave exactly as with the full
 `@PLUGIN@.jar` — deploy only the provider you actually use.
+
+SAP IAS is available only from the standalone `@PLUGIN@-sapias` artifact.
 
 ### Gerrit-tree-only plugin checks
 
