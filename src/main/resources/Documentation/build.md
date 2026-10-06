@@ -128,12 +128,25 @@ Gerrit core in `tools/bzl/plugins.bzl`, and execute:
 
 ### Single-provider artifacts
 
-Besides the all-inclusive `@PLUGIN@.jar`, the plugin can be built as slimmer,
+Besides the default `@PLUGIN@.jar`, the plugin can be built as slimmer,
 single-provider artifacts that bundle only one provider plus the shared core
 libraries. They are optional and do not affect the default build:
 
 ```
-  bazel build @PLUGIN@-google @PLUGIN@-github @PLUGIN@-discovery @PLUGIN@-keycloak @PLUGIN@-sapias
+  bazel build \
+    @PLUGIN@-airvantage \
+    @PLUGIN@-azure \
+    @PLUGIN@-bitbucket \
+    @PLUGIN@-cas \
+    @PLUGIN@-dex \
+    @PLUGIN@-discovery \
+    @PLUGIN@-facebook \
+    @PLUGIN@-github \
+    @PLUGIN@-gitlab \
+    @PLUGIN@-google \
+    @PLUGIN@-keycloak \
+    @PLUGIN@-phabricator \
+    @PLUGIN@-sapias
 ```
 
 (prefix the targets with `plugins/@PLUGIN@:` when building in the Gerrit tree).

@@ -64,27 +64,92 @@ gerrit_plugin_library(
     deps = [":utils"],
 )
 
+AIRVANTAGE_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/airvantage/**/*.java"
+
+AZURE_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/azure/**/*.java"
+
+BITBUCKET_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/bitbucket/**/*.java"
+
+CAS_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/cas/**/*.java"
+
+DEX_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/dex/**/*.java"
+
 DISCOVERY_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/discovery/**/*.java"
 
+FACEBOOK_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/facebook/**/*.java"
+
 GITHUB_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/github/**/*.java"
+
+GITLAB_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/gitlab/**/*.java"
 
 GOOGLE_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/google/**/*.java"
 
 KEYCLOAK_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/keycloak/**/*.java"
 
+PHABRICATOR_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/phabricator/**/*.java"
+
 SAPIAS_SRCS = "src/main/java/com/googlesource/gerrit/plugins/oauth/sapias/**/*.java"
 
-# Providers bundled only in the all-inclusive oauth plugin (no standalone artifact).
-PROVIDERS_SRCS = [
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/airvantage/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/azure/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/bitbucket/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/cas/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/dex/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/facebook/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/gitlab/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/phabricator/**/*.java",
+PROVIDER_SRCS = [
+    AIRVANTAGE_SRCS,
+    AZURE_SRCS,
+    BITBUCKET_SRCS,
+    CAS_SRCS,
+    DEX_SRCS,
+    DISCOVERY_SRCS,
+    FACEBOOK_SRCS,
+    GITHUB_SRCS,
+    GITLAB_SRCS,
+    GOOGLE_SRCS,
+    KEYCLOAK_SRCS,
+    PHABRICATOR_SRCS,
+    SAPIAS_SRCS,
 ]
+
+gerrit_plugin_library(
+    name = "airvantage",
+    srcs = glob(
+        [AIRVANTAGE_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
+    name = "azure",
+    srcs = glob(
+        [AZURE_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
+    name = "bitbucket",
+    srcs = glob(
+        [BITBUCKET_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
+    name = "cas",
+    srcs = glob(
+        [CAS_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
+    name = "dex",
+    srcs = glob(
+        [DEX_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
 
 gerrit_plugin_library(
     name = "discovery",
@@ -96,9 +161,27 @@ gerrit_plugin_library(
 )
 
 gerrit_plugin_library(
+    name = "facebook",
+    srcs = glob(
+        [FACEBOOK_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
     name = "github",
     srcs = glob(
         [GITHUB_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
+    name = "gitlab",
+    srcs = glob(
+        [GITLAB_SRCS],
         exclude = ["**/*PluginModule.java"],
     ),
     deps = CORE_LIBS,
@@ -123,6 +206,15 @@ gerrit_plugin_library(
 )
 
 gerrit_plugin_library(
+    name = "phabricator",
+    srcs = glob(
+        [PHABRICATOR_SRCS],
+        exclude = ["**/*PluginModule.java"],
+    ),
+    deps = CORE_LIBS,
+)
+
+gerrit_plugin_library(
     name = "sapias",
     srcs = glob(
         [SAPIAS_SRCS],
@@ -133,12 +225,20 @@ gerrit_plugin_library(
     deps = CORE_LIBS,
 )
 
-gerrit_plugin_library(
-    name = "providers",
-    srcs = glob(PROVIDERS_SRCS),
-    plugin = PLUGIN,
-    deps = CORE_LIBS,
-)
+PROVIDER_LIBS = [
+    ":airvantage",
+    ":azure",
+    ":bitbucket",
+    ":cas",
+    ":dex",
+    ":discovery",
+    ":facebook",
+    ":github",
+    ":gitlab",
+    ":google",
+    ":keycloak",
+    ":phabricator",
+]
 
 gerrit_plugin(
     srcs = glob(
@@ -146,14 +246,9 @@ gerrit_plugin(
         exclude = [
             BASE_SRCS,
             CLIENT_SRCS,
-            DISCOVERY_SRCS,
-            GITHUB_SRCS,
-            GOOGLE_SRCS,
             JWT_SRCS,
-            KEYCLOAK_SRCS,
-            SAPIAS_SRCS,
             UTILS_SRCS,
-        ] + PROVIDERS_SRCS,
+        ] + PROVIDER_SRCS,
     ),
     ext_deps = EXT_DEPS,
     manifest_entries = [
@@ -165,13 +260,7 @@ gerrit_plugin(
     ],
     plugin = PLUGIN,
     resources = glob(["src/main/resources/**/*"]),
-    deps = CORE_LIBS + [
-        ":discovery",
-        ":github",
-        ":google",
-        ":keycloak",
-        ":providers",
-    ],
+    deps = CORE_LIBS + PROVIDER_LIBS,
 )
 
 [
@@ -190,10 +279,18 @@ gerrit_plugin(
         deps = CORE_LIBS + [":" + provider],
     )
     for provider, module, init in [
+        ("airvantage", "AirVantagePluginModule", "AirVantageInitStep"),
+        ("azure", "AzurePluginModule", "AzureInitStep"),
+        ("bitbucket", "BitbucketPluginModule", "BitbucketInitStep"),
+        ("cas", "CasPluginModule", "CasInitStep"),
+        ("dex", "DexPluginModule", "DexInitStep"),
         ("discovery", "DiscoveryPluginModule", "DiscoveryInitStep"),
+        ("facebook", "FacebookPluginModule", "FacebookInitStep"),
         ("github", "GitHubPluginModule", "GitHubInitStep"),
+        ("gitlab", "GitLabPluginModule", "GitLabInitStep"),
         ("google", "GooglePluginModule", "GoogleInitStep"),
         ("keycloak", "KeycloakPluginModule", "KeycloakInitStep"),
+        ("phabricator", "PhabricatorPluginModule", "PhabricatorInitStep"),
         ("sapias", "SAPIasPluginModule", "SAPIasInitStep"),
     ]
 ]
@@ -225,13 +322,8 @@ gerrit_plugin_tests(
     name = "providers_tests",
     srcs = glob(PROVIDERS_TEST_SRCS),
     deps = CORE_LIBS + [
-        ":discovery",
-        ":github",
-        ":google",
-        ":keycloak",
-        ":providers",
         ":providers_test_deps",
-    ],
+    ] + PROVIDER_LIBS,
 )
 
 gerrit_plugin_tests(
@@ -250,5 +342,5 @@ gerrit_plugin_tests(
     ),
     ext_deps = EXT_DEPS,
     plugin = PLUGIN,
-    deps = CORE_LIBS + [":providers"],
+    deps = CORE_LIBS + PROVIDER_LIBS,
 )

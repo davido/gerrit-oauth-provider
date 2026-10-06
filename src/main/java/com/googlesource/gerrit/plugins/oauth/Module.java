@@ -48,7 +48,7 @@ import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService
 import java.util.List;
 import org.eclipse.jgit.lib.Config;
 
-/** All-inclusive {@code oauth} plugin module: bundles every OAuth provider. */
+/** Default {@code oauth} plugin module: bundles OAuth providers that ship in {@code oauth.jar}. */
 public class Module extends AbstractOAuthModule {
 
   private static final List<SupportedLoginProvider> SUPPORTED_LOGIN_PROVIDERS =
