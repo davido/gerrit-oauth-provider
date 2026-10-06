@@ -45,9 +45,9 @@ import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakModule;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthLoginProvider;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthService;
 import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasModule;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthLoginProvider;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
+import com.googlesource.gerrit.plugins.oauth.sapias.SAPIasModule;
+import com.googlesource.gerrit.plugins.oauth.sapias.SAPIasOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.sapias.SAPIasOAuthService;
 import java.util.List;
 import org.eclipse.jgit.lib.Config;
 

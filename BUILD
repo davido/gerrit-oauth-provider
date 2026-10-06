@@ -77,7 +77,7 @@ PROVIDERS_SRCS = [
     "src/main/java/com/googlesource/gerrit/plugins/oauth/facebook/**/*.java",
     "src/main/java/com/googlesource/gerrit/plugins/oauth/gitlab/**/*.java",
     "src/main/java/com/googlesource/gerrit/plugins/oauth/phabricator/**/*.java",
-    "src/main/java/com/googlesource/gerrit/plugins/oauth/sap/**/*.java",
+    "src/main/java/com/googlesource/gerrit/plugins/oauth/sapias/**/*.java",
 ]
 
 gerrit_plugin_library(
@@ -201,7 +201,7 @@ PROVIDERS_TEST_SRCS = [
     "src/test/java/com/googlesource/gerrit/plugins/oauth/google/**/*.java",
     "src/test/java/com/googlesource/gerrit/plugins/oauth/keycloak/**/*.java",
     "src/test/java/com/googlesource/gerrit/plugins/oauth/phabricator/**/*.java",
-    "src/test/java/com/googlesource/gerrit/plugins/oauth/sap/**/*.java",
+    "src/test/java/com/googlesource/gerrit/plugins/oauth/sapias/**/*.java",
 ]
 
 gerrit_plugin_ext_test_deps(

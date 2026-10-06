@@ -36,7 +36,7 @@ import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthService;
 import com.googlesource.gerrit.plugins.oauth.google.GoogleInitStep;
 import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakInitStep;
 import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
-import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
+import com.googlesource.gerrit.plugins.oauth.sapias.SAPIasOAuthService;
 
 /**
  * All-inclusive {@code oauth} plugin init step. Delegates the providers that also ship as
