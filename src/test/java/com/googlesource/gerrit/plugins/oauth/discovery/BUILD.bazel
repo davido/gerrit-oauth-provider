@@ -1,0 +1,6 @@
+load("//plugins/oauth:provider.bzl", "oauth_test")
+
+oauth_test(
+    "discovery",
+    nimbus = True,
+)

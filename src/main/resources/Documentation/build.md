@@ -32,7 +32,6 @@ To execute the tests run either of:
 ```
   bazel test plugins/@PLUGIN@/...
   bazel test --test_tag_filters=@PLUGIN@ //...
-  bazel test plugins/@PLUGIN@:@PLUGIN@_plugin_tests
 ```
 
 This project can also be imported into the Eclipse IDE. Add the plugin name
@@ -45,32 +44,13 @@ execute:
 
 ### Single-provider artifacts
 
-Besides the default `@PLUGIN@.jar`, the plugin can be built as slimmer,
-single-provider artifacts that bundle only one provider plus the shared core
-libraries. They are optional and do not affect the default build:
-
-```
-  bazel build \
-    plugins/@PLUGIN@:@PLUGIN@-airvantage \
-    plugins/@PLUGIN@:@PLUGIN@-azure \
-    plugins/@PLUGIN@:@PLUGIN@-bitbucket \
-    plugins/@PLUGIN@:@PLUGIN@-cas \
-    plugins/@PLUGIN@:@PLUGIN@-dex \
-    plugins/@PLUGIN@:@PLUGIN@-discovery \
-    plugins/@PLUGIN@:@PLUGIN@-facebook \
-    plugins/@PLUGIN@:@PLUGIN@-github \
-    plugins/@PLUGIN@:@PLUGIN@-gitlab \
-    plugins/@PLUGIN@:@PLUGIN@-google \
-    plugins/@PLUGIN@:@PLUGIN@-keycloak \
-    plugins/@PLUGIN@:@PLUGIN@-phabricator \
-    plugins/@PLUGIN@:@PLUGIN@-sapias
-```
-
-Each artifact registers as the same `gerrit-oauth-provider` plugin and ships
-its own init step, so `gerrit.config` and `init` behave exactly as with the
-full `@PLUGIN@.jar` — deploy only the provider you actually use.
-
-SAP IAS is available only from the `@PLUGIN@-sapias` artifact.
+Besides the default `@PLUGIN@.jar`, each provider can be built as a slimmer,
+single-provider artifact that bundles only that provider plus the shared core
+libraries — the `@PLUGIN@-<provider>` target in the provider's own package.
+They are optional and do not affect the default build, register as the same
+`gerrit-oauth-provider` plugin, and ship their own init step, so `gerrit.config`
+and `init` behave exactly as with the full `@PLUGIN@.jar`. SAP IAS is available
+only as its single-provider artifact.
 
 ### Packaged runtime JAR allowlist test
 

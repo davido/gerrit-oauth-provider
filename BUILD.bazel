@@ -1,0 +1,39 @@
+load("@com_googlesource_gerrit_bazlets//:gerrit_plugin.bzl", "gerrit_plugin")
+load("//plugins/oauth:provider.bzl", "CORE")
+
+filegroup(
+    name = "oauth_resources",
+    srcs = glob(["src/main/resources/**/*"]),
+    visibility = ["//plugins/oauth:__subpackages__"],
+)
+
+gerrit_plugin(
+    srcs = glob(["src/main/java/**/*.java"]),
+    ext_deps = ["com.nimbusds:nimbus-jose-jwt"],
+    manifest_entries = [
+        "Gerrit-PluginName: gerrit-oauth-provider",
+        "Gerrit-Module: com.googlesource.gerrit.plugins.oauth.Module",
+        "Gerrit-InitStep: com.googlesource.gerrit.plugins.oauth.InitOAuth",
+        "Implementation-Title: Gerrit OAuth authentication provider",
+        "Implementation-URL: https://github.com/davido/gerrit-oauth-provider",
+    ],
+    plugin = "oauth",
+    resources = [":oauth_resources"],
+    deps = [
+        "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/" + provider
+        for provider in [
+            "airvantage",
+            "azure",
+            "bitbucket",
+            "cas",
+            "dex",
+            "discovery",
+            "facebook",
+            "github",
+            "gitlab",
+            "google",
+            "keycloak",
+            "phabricator",
+        ]
+    ] + CORE,
+)

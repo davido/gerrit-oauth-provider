@@ -1,0 +1,7 @@
+load("@com_googlesource_gerrit_bazlets//:gerrit_plugin.bzl", "gerrit_plugin_library")
+
+gerrit_plugin_library(
+    name = "utils",
+    srcs = glob(["*.java"]),
+    visibility = ["//plugins/oauth:__subpackages__"],
+)
