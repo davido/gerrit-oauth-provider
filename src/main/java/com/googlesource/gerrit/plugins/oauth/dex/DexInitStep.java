@@ -37,7 +37,7 @@ public class DexInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use Dex OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       checkRootUrl(s.string("Dex Root URL", ROOT_URL, null));
-      s.string("Enable PKCE for Dex OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Dex OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

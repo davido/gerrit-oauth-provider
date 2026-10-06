@@ -39,7 +39,7 @@ public class CasInitStep extends AbstractOAuthInitStep {
         && configureOAuth(s)) {
       checkRootUrl(s.string("CAS Root URL", ROOT_URL, null));
       s.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
-      s.string("Enable PKCE for CAS OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for CAS OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

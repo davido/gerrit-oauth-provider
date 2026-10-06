@@ -35,7 +35,7 @@ public class FacebookInitStep extends AbstractOAuthInitStep {
     Section s = getConfigSection(FacebookOAuthService.class);
     if (ui.yesno(isConfigured(s), "Use Facebook OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
-      s.string("Enable PKCE for Facebook OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Facebook OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

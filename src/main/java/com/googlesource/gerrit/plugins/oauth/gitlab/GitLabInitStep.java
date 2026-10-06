@@ -38,7 +38,7 @@ public class GitLabInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use GitLab OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       checkRootUrl(s.string("GitLab Root URL", ROOT_URL, null));
-      s.string("Enable PKCE for GitLab OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for GitLab OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for GitLab OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
   }

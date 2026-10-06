@@ -38,7 +38,7 @@ public class SAPIasInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use SAP IAS OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       checkRootUrl(s.string("SAP IAS Root URL", ROOT_URL, null));
-      s.string("Enable PKCE for SAP IAS OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for SAP IAS OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for SAP IAS OAuth provider?", ENABLE_GIT_OVER_HTTP, "true");
       s.string(
           "Enable SAP IAS resource-owner password flow?",

@@ -38,7 +38,7 @@ public class PhabricatorInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use Phabricator OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       checkRootUrl(s.string("Phabricator Root URL", ROOT_URL, null));
-      s.string("Enable PKCE for Phabricator OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Phabricator OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

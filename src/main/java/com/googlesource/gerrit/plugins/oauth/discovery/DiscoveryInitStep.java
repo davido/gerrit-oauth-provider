@@ -40,7 +40,7 @@ public class DiscoveryInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use Well Known Discovery OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       checkRootUrl(s.string("Discovery Root URL(before `/.well-known')", ROOT_URL, null));
-      s.string("Enable PKCE for Discovery OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Discovery OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for Discovery OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
       s.string("Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
       s.string(

@@ -35,7 +35,7 @@ public class AirVantageInitStep extends AbstractOAuthInitStep {
     Section s = getConfigSection(AirVantageOAuthService.class);
     if (ui.yesno(isConfigured(s), "Use AirVantage OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
-      s.string("Enable PKCE for AirVantage OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for AirVantage OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

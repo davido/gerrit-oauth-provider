@@ -38,7 +38,7 @@ public class AzureInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use Azure OAuth provider for Gerrit login?")) {
       configureOAuth(s);
       s.string("Tenant", TENANT, AzureActiveDirectoryService.DEFAULT_TENANT);
-      s.string("Enable PKCE for Azure OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Azure OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for Azure OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
   }

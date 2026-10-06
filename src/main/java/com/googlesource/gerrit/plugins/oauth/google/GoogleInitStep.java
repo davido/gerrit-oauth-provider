@@ -38,7 +38,7 @@ public class GoogleInitStep extends AbstractOAuthInitStep {
     if (ui.yesno(isConfigured(s), "Use Google OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
       s.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
-      s.string("Enable PKCE for Google OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Google OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for Google OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
   }
