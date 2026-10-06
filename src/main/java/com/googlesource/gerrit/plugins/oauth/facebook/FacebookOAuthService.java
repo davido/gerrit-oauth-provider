@@ -15,122 +15,95 @@
 package com.googlesource.gerrit.plugins.oauth.facebook;
 
 import static com.google.gerrit.json.OutputFormat.JSON;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.asString;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.isNull;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.asString;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
-import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.github.scribejava.core.model.OAuthRequest;
-import com.github.scribejava.core.model.Response;
-import com.github.scribejava.core.model.Verb;
-import com.github.scribejava.core.oauth.OAuth20Service;
-import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
-import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
-import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
+import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.oauth.OAuth20ServiceFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderConfig;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.StandardResourceOAuthService;
+import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
+import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
+import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
+import com.googlesource.gerrit.plugins.oauth.client.TokenResponseFormat;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Singleton
 @OAuthServiceProviderConfig(name = FacebookOAuthService.PROVIDER_NAME)
-public class FacebookOAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(FacebookOAuthService.class);
+public class FacebookOAuthService extends StandardResourceOAuthService {
+  private static final String AUTHORIZATION_URL = "https://www.facebook.com/dialog/oauth";
+  private static final String ACCESS_TOKEN_URL = "https://graph.facebook.com/oauth/access_token";
   private static final String PROTECTED_RESOURCE_URL = "https://graph.facebook.com/me";
   public static final String PROVIDER_NAME = "facebook";
   private static final String SCOPE = "email";
   private static final String FIELDS_QUERY = "fields";
   private static final String FIELDS = "email,name";
-  private final OAuth20Service service;
   private final String extIdScheme;
 
   @Inject
-  FacebookOAuthService(OAuth20ServiceFactory oauth20ServiceFactory) {
-    service = oauth20ServiceFactory.create(PROVIDER_NAME, new Facebook2Api(), SCOPE);
-
+  FacebookOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
+    super("Facebook OAuth2");
+    PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: request-body client auth, JSON token response, header bearer, scope email.
+    OAuthProviderEndpoints endpoints =
+        new OAuthProviderEndpoints(
+            AUTHORIZATION_URL,
+            ACCESS_TOKEN_URL,
+            SCOPE,
+            ClientAuthStyle.REQUEST_BODY,
+            BearerPlacement.AUTHORIZATION_HEADER,
+            TokenResponseFormat.JSON,
+            /* tolerateMissingTokenType= */ false,
+            enablePkce);
+    client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }
 
   @Override
-  public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    OAuthRequest request = new OAuthRequest(Verb.GET, PROTECTED_RESOURCE_URL);
-    request.addQuerystringParameter(FIELDS_QUERY, FIELDS);
-    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
-    service.signRequest(t, request);
+  protected String resourceUrl() {
+    // Percent-encode the fields value (comma -> %2C) so it is a valid single query parameter.
+    return PROTECTED_RESOURCE_URL
+        + "?"
+        + FIELDS_QUERY
+        + "="
+        + URLEncoder.encode(FIELDS, StandardCharsets.UTF_8);
+  }
 
-    JsonElement userJson = null;
-    try (Response response = service.execute(request)) {
-      if (response.getCode() != HttpServletResponse.SC_OK) {
-        throw new IOException(
-            String.format(
-                "Status %s (%s) for request %s",
-                response.getCode(), response.getBody(), request.getUrl()));
+  @Override
+  protected OAuthUserInfo parseUserInfo(String body) throws IOException {
+    JsonElement userJson = JSON.newGson().fromJson(body, JsonElement.class);
+    if (userJson.isJsonObject()) {
+      JsonObject jsonObject = userJson.getAsJsonObject();
+      JsonElement id = jsonObject.get("id");
+      if (isNull(id)) {
+        throw new IOException("Response doesn't contain id field");
       }
-      userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
+      JsonElement email = jsonObject.get("email");
+      JsonElement name = jsonObject.get("name");
+      // Heads up!
+      // Lets keep `login` equal to `email`, since `username` field is
+      // deprecated for Facebook API versions v2.0 and higher
+      JsonElement login = jsonObject.get("email");
 
-      if (log.isDebugEnabled()) {
-        log.debug("User info response: {}", response.getBody());
-      }
-      if (userJson.isJsonObject()) {
-        JsonObject jsonObject = userJson.getAsJsonObject();
-        JsonElement id = jsonObject.get("id");
-        if (isNull(id)) {
-          throw new IOException("Response doesn't contain id field");
-        }
-        JsonElement email = jsonObject.get("email");
-        JsonElement name = jsonObject.get("name");
-        // Heads up!
-        // Lets keep `login` equal to `email`, since `username` field is
-        // deprecated for Facebook API versions v2.0 and higher
-        JsonElement login = jsonObject.get("email");
-
-        return new OAuthUserInfo(
-            extIdScheme + ":" + id.getAsString(),
-            asString(login),
-            asString(email),
-            asString(name),
-            null);
-      }
-    } catch (ExecutionException | InterruptedException e) {
-      throw new RuntimeException("Cannot retrieve user info resource", e);
+      return new OAuthUserInfo(
+          extIdScheme + ":" + id.getAsString(),
+          asString(login),
+          asString(email),
+          asString(name),
+          null);
     }
 
     throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
-  }
-
-  @Override
-  public OAuthToken getAccessToken(OAuthVerifier rv) {
-    try {
-      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
-      return new OAuthToken(
-          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
-    } catch (InterruptedException | ExecutionException | IOException e) {
-      String msg = "Cannot retrieve access token";
-      log.error(msg, e);
-      throw new RuntimeException(msg, e);
-    }
-  }
-
-  @Override
-  public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl();
-  }
-
-  @Override
-  public String getVersion() {
-    return service.getVersion();
-  }
-
-  @Override
-  public String getName() {
-    return "Facebook OAuth2";
   }
 }

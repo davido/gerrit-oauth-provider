@@ -14,70 +14,89 @@
 
 package com.googlesource.gerrit.plugins.oauth;
 
-import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.annotations.PluginName;
-import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
-import com.google.gerrit.server.account.AccountExternalIdCreator;
+import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.server.account.externalids.ExternalIdFactory;
 import com.google.gerrit.server.config.GerritServerConfig;
-import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
+import com.googlesource.gerrit.plugins.oauth.airvantage.AirVantageOAuthService;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureActiveDirectoryService;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureModule;
+import com.googlesource.gerrit.plugins.oauth.azure.AzureOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.base.AbstractOAuthModule;
+import com.googlesource.gerrit.plugins.oauth.base.SupportedLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.bitbucket.BitbucketOAuthService;
+import com.googlesource.gerrit.plugins.oauth.cas.CasOAuthService;
+import com.googlesource.gerrit.plugins.oauth.dex.DexOAuthService;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryModule;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.discovery.DiscoveryOAuthService;
+import com.googlesource.gerrit.plugins.oauth.facebook.FacebookOAuthService;
+import com.googlesource.gerrit.plugins.oauth.github.GitHubModule;
+import com.googlesource.gerrit.plugins.oauth.github.GitHubOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.github.GitHubOAuthService;
+import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabModule;
+import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.gitlab.GitLabOAuthService;
+import com.googlesource.gerrit.plugins.oauth.google.GoogleModule;
+import com.googlesource.gerrit.plugins.oauth.google.GoogleOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.google.GoogleOAuthService;
+import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakModule;
+import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.keycloak.KeycloakOAuthService;
+import com.googlesource.gerrit.plugins.oauth.phabricator.PhabricatorOAuthService;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasModule;
 import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthLoginProvider;
+import com.googlesource.gerrit.plugins.oauth.sap.SAPIasOAuthService;
 import java.util.List;
 import org.eclipse.jgit.lib.Config;
 
-public class Module extends AbstractModule {
-  private final List<String> configuredProviders;
-  private final ExternalIdFactory externalIdFactory;
-  private final String pluginName;
-  private final Config cfg;
+/** All-inclusive {@code oauth} plugin module: bundles every OAuth provider. */
+public class Module extends AbstractOAuthModule {
+
+  private static final List<SupportedLoginProvider> SUPPORTED_LOGIN_PROVIDERS =
+      List.of(
+          // SAP is grandfathered on; newer providers default off (opt-in via enable-git-over-http).
+          new SupportedLoginProvider(SAPIasOAuthLoginProvider.class, SAPIasModule::new, true),
+          new SupportedLoginProvider(KeycloakOAuthLoginProvider.class, KeycloakModule::new, false),
+          new SupportedLoginProvider(
+              DiscoveryOAuthLoginProvider.class, DiscoveryModule::new, false),
+          new SupportedLoginProvider(GoogleOAuthLoginProvider.class, GoogleModule::new, false),
+          new SupportedLoginProvider(GitHubOAuthLoginProvider.class, GitHubModule::new, false),
+          new SupportedLoginProvider(GitLabOAuthLoginProvider.class, GitLabModule::new, false),
+          new SupportedLoginProvider(AzureOAuthLoginProvider.class, AzureModule::new, false));
+
+  private static final List<Class<? extends OAuthServiceProvider>> ALL_SERVICE_PROVIDERS =
+      List.of(
+          AirVantageOAuthService.class,
+          AzureActiveDirectoryService.class,
+          BitbucketOAuthService.class,
+          CasOAuthService.class,
+          DexOAuthService.class,
+          DiscoveryOAuthService.class,
+          FacebookOAuthService.class,
+          GitHubOAuthService.class,
+          GitLabOAuthService.class,
+          GoogleOAuthService.class,
+          KeycloakOAuthService.class,
+          PhabricatorOAuthService.class,
+          SAPIasOAuthService.class);
 
   @Inject
   public Module(
       @GerritServerConfig Config config,
       @PluginName String pluginName,
       ExternalIdFactory externalIdFactory) {
-    this.pluginName = pluginName;
-    configuredProviders =
-        config.getSubsections("plugin").stream()
-            .filter(s -> s.startsWith(pluginName))
-            .map(s -> s.substring(pluginName.length() + 1, s.length() - 6))
-            .toList();
-    this.externalIdFactory = externalIdFactory;
-    this.cfg = config;
+    super(config, pluginName, externalIdFactory);
   }
 
   @Override
-  protected void configure() {
-    bind(OAuthPluginConfigFactory.class);
-    bind(OAuth20ServiceFactory.class);
-    for (String provider : configuredProviders) {
-      bind(AccountExternalIdCreator.class)
-          .annotatedWith(Exports.named(provider))
-          .toInstance(
-              new OAuthExternalIdCreator(
-                  externalIdFactory, OAuthServiceProviderExternalIdScheme.create(provider)));
-    }
-
-    boolean oAuthModuleInstalled =
-        installOAuthModule(SAPIasOAuthLoginProvider.class, new SAPIasModule());
-
-    if (!oAuthModuleInstalled) {
-      bind(OAuthLoginProvider.class)
-          .annotatedWith(Exports.named(pluginName))
-          .to(DisabledOAuthLoginProvider.class);
-    }
+  protected List<Class<? extends OAuthServiceProvider>> serviceProviders() {
+    return ALL_SERVICE_PROVIDERS;
   }
 
-  private boolean installOAuthModule(
-      Class<? extends OAuthLoginProvider> loginClass, AbstractModule oAuthModule) {
-    String loginProviderName = loginClass.getAnnotation(OAuthServiceProviderConfig.class).name();
-    String cfgSuffix = OAuthPluginConfigFactory.getConfigSuffix(loginProviderName);
-    if (cfg.getString("plugin", pluginName + cfgSuffix, InitOAuth.CLIENT_ID) != null) {
-      install(oAuthModule);
-      return true;
-    }
-    return false;
+  @Override
+  protected List<SupportedLoginProvider> loginProviders() {
+    return SUPPORTED_LOGIN_PROVIDERS;
   }
 }

@@ -15,11 +15,11 @@
 package com.googlesource.gerrit.plugins.oauth.sap;
 
 import static com.google.gerrit.server.account.externalids.ExternalId.SCHEME_USERNAME;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.jwtPayloadJson;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.jwtPayloadJson;
 
-import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.google.gerrit.entities.Account;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
+import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
 import com.google.gerrit.server.account.externalids.ExternalId;
 import com.google.gerrit.server.account.externalids.ExternalIdKeyFactory;
@@ -31,9 +31,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.oauth.OAuthPluginConfigFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderConfig;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -69,9 +69,9 @@ public class SAPIasOAuthLoginProvider implements OAuthLoginProvider {
     if (secret == null) {
       throw new IOException("Authentication error");
     }
-    OAuth2AccessToken accessToken;
+    OAuthToken accessToken;
     if (isAccessToken(secret)) {
-      accessToken = new OAuth2AccessToken(secret);
+      accessToken = bearerToken(secret);
     } else if (enableResourceOwnerPasswordFlow) {
       if (username == null) {
         throw new IOException("Authentication error");
@@ -101,6 +101,14 @@ public class SAPIasOAuthLoginProvider implements OAuthLoginProvider {
       throw new IOException("Authentication error: username does not match");
     }
     return userInfo;
+  }
+
+  private static OAuthToken bearerToken(String secret) {
+    // The presented secret is itself the id_token; wrap it as the token's raw
+    // response so getUserInfo's id_token extraction returns it unchanged.
+    JsonObject raw = new JsonObject();
+    raw.addProperty("id_token", secret);
+    return new OAuthToken(secret, "", raw.toString());
   }
 
   private boolean isAccessToken(String accessToken) {

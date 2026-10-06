@@ -14,11 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth.gitlab;
 
-import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.oauth2.clientauthentication.ClientAuthentication;
-import com.github.scribejava.core.oauth2.clientauthentication.RequestBodyAuthenticationScheme;
-
-public class GitLabApi extends DefaultApi20 {
+/** GitLab OAuth endpoint URLs. */
+public class GitLabApi {
   private static final String AUTHORIZE_URL = "%s/oauth/authorize";
 
   private final String rootUrl;
@@ -27,18 +24,11 @@ public class GitLabApi extends DefaultApi20 {
     this.rootUrl = rootUrl;
   }
 
-  @Override
   public String getAuthorizationBaseUrl() {
     return String.format(AUTHORIZE_URL, rootUrl);
   }
 
-  @Override
   public String getAccessTokenEndpoint() {
     return String.format("%s/oauth/token", rootUrl);
-  }
-
-  @Override
-  public ClientAuthentication getClientAuthentication() {
-    return RequestBodyAuthenticationScheme.instance();
   }
 }

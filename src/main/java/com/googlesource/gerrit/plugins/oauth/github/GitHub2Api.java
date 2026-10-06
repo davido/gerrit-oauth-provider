@@ -14,13 +14,11 @@
 
 package com.googlesource.gerrit.plugins.oauth.github;
 
-import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
-import com.github.scribejava.core.extractors.TokenExtractor;
-import com.github.scribejava.core.model.OAuth2AccessToken;
-
-public class GitHub2Api extends DefaultApi20 {
-  private static final String AUTHORIZE_URL = "%slogin/oauth/authorize";
+/** GitHub OAuth endpoint URLs. Also feeds the Git-over-HTTP token-check path. */
+public class GitHub2Api {
+  private static final String AUTHORIZE_URL = "%s/login/oauth/authorize";
+  private static final String GITHUB_API_ENDPOINT_URL = "https://api.github.com";
+  private static final String GHE_API_ENDPOINT_URL = "%s/api/v3";
 
   private final String rootUrl;
 
@@ -28,18 +26,26 @@ public class GitHub2Api extends DefaultApi20 {
     this.rootUrl = rootUrl;
   }
 
-  @Override
   public String getAccessTokenEndpoint() {
-    return String.format("%slogin/oauth/access_token", rootUrl);
+    return String.format("%s/login/oauth/access_token", rootUrl);
   }
 
-  @Override
-  protected String getAuthorizationBaseUrl() {
+  /**
+   * The REST API base URL: {@code https://api.github.com} for github.com, else {@code
+   * <root>/api/v3}.
+   */
+  public String getApiUrl() {
+    return GitHubOAuthService.GITHUB_ROOT_URL.equals(rootUrl)
+        ? GITHUB_API_ENDPOINT_URL
+        : String.format(GHE_API_ENDPOINT_URL, rootUrl);
+  }
+
+  /** The "check a token" endpoint that validates an OAuth-App access token for {@code clientId}. */
+  public String getApplicationsTokenEndpoint(String clientId) {
+    return getApiUrl() + "/applications/" + clientId + "/token";
+  }
+
+  public String getAuthorizationBaseUrl() {
     return String.format(AUTHORIZE_URL, rootUrl);
-  }
-
-  @Override
-  public TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
-    return OAuth2AccessTokenExtractor.instance();
   }
 }

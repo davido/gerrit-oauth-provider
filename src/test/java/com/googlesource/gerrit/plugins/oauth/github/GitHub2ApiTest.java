@@ -16,20 +16,20 @@ package com.googlesource.gerrit.plugins.oauth.github;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
-import org.junit.Before;
 import org.junit.Test;
 
 public class GitHub2ApiTest {
-  private GitHub2Api api;
-
-  @Before
-  public void setUp() {
-    api = new GitHub2Api(GitHubOAuthService.GITHUB_ROOT_URL);
+  @Test
+  public void applicationsTokenEndpoint_githubCom() {
+    assertThat(
+            new GitHub2Api(GitHubOAuthService.GITHUB_ROOT_URL)
+                .getApplicationsTokenEndpoint("client123"))
+        .isEqualTo("https://api.github.com/applications/client123/token");
   }
 
   @Test
-  public void testAccessTokenExtractor() {
-    assertThat(api.getAccessTokenExtractor()).isInstanceOf(OAuth2AccessTokenExtractor.class);
+  public void applicationsTokenEndpoint_ghes() {
+    assertThat(new GitHub2Api("https://git.example.com").getApplicationsTokenEndpoint("client123"))
+        .isEqualTo("https://git.example.com/api/v3/applications/client123/token");
   }
 }

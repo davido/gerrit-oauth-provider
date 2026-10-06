@@ -16,20 +16,19 @@ package com.googlesource.gerrit.plugins.oauth.keycloak;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
-import org.junit.Before;
 import org.junit.Test;
 
 public class KeycloakApiTest {
-  private KeycloakApi api;
-
-  @Before
-  public void setUp() {
-    api = new KeycloakApi("", "");
+  @Test
+  public void getIssuer_derivesRealmIssuer() {
+    KeycloakApi a = new KeycloakApi("https://id.example.com", "gerrit");
+    assertThat(a.getIssuer()).isEqualTo("https://id.example.com/realms/gerrit");
   }
 
   @Test
-  public void testAccessTokenExtractor() {
-    assertThat(api.getAccessTokenExtractor()).isInstanceOf(OAuth2AccessTokenJsonExtractor.class);
+  public void getJwksEndpoint_derivesRealmCertsUrl() {
+    KeycloakApi a = new KeycloakApi("https://id.example.com", "gerrit");
+    assertThat(a.getJwksEndpoint())
+        .isEqualTo("https://id.example.com/realms/gerrit/protocol/openid-connect/certs");
   }
 }

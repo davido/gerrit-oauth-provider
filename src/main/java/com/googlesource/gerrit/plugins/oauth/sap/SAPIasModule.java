@@ -18,7 +18,7 @@ import com.google.gerrit.extensions.annotations.Exports;
 import com.google.gerrit.extensions.auth.oauth.OAuthLoginProvider;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
 import com.sap.cloud.security.token.Token;
 import com.sap.cloud.security.token.validation.CombiningValidator;
 

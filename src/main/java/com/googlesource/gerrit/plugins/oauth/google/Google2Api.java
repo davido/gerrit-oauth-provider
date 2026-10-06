@@ -14,16 +14,23 @@
 
 package com.googlesource.gerrit.plugins.oauth.google;
 
-import com.github.scribejava.core.builder.api.DefaultApi20;
-
-public class Google2Api extends DefaultApi20 {
-  @Override
+/** Google OAuth endpoint URLs. Also feeds the Git-over-HTTP tokeninfo path. */
+public class Google2Api {
   public String getAccessTokenEndpoint() {
     return "https://www.googleapis.com/oauth2/v4/token";
   }
 
-  @Override
   public String getAuthorizationBaseUrl() {
     return "https://accounts.google.com/o/oauth2/auth";
+  }
+
+  /** Endpoint that introspects an opaque Google {@code access_token}. */
+  public String getTokenInfoEndpoint() {
+    return "https://oauth2.googleapis.com/tokeninfo";
+  }
+
+  /** OAuth 2.0 token revocation endpoint (RFC 7009); revoking a refresh token kills the grant. */
+  public String getRevocationEndpoint() {
+    return "https://oauth2.googleapis.com/revoke";
   }
 }

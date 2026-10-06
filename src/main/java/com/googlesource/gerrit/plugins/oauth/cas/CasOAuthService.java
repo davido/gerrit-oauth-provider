@@ -14,19 +14,10 @@
 
 package com.googlesource.gerrit.plugins.oauth.cas;
 
-import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.gerrit.json.OutputFormat.JSON;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.isNull;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
-import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.github.scribejava.core.model.OAuthRequest;
-import com.github.scribejava.core.model.Response;
-import com.github.scribejava.core.model.Verb;
-import com.github.scribejava.core.oauth.OAuth20Service;
-import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
-import com.google.gerrit.extensions.auth.oauth.OAuthToken;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
-import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -34,122 +25,120 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.oauth.InitOAuth;
-import com.googlesource.gerrit.plugins.oauth.OAuth20ServiceFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthPluginConfigFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderConfig;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.StandardResourceOAuthService;
+import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
+import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
+import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
+import com.googlesource.gerrit.plugins.oauth.client.TokenResponseFormat;
+import com.googlesource.gerrit.plugins.oauth.utils.OAuthUrls;
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
-import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @OAuthServiceProviderConfig(name = CasOAuthService.PROVIDER_NAME)
-public class CasOAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(CasOAuthService.class);
+public class CasOAuthService extends StandardResourceOAuthService {
   public static final String PROVIDER_NAME = "cas";
   private static final String PROTECTED_RESOURCE_URL = "%s/oauth2.0/profile";
   private static final String USE_JSON_EXTRACTOR = "use-json-extractor";
 
   private final String rootUrl;
   private final boolean fixLegacyUserId;
-  private final OAuth20Service service;
   private final String extIdScheme;
 
   @Inject
-  CasOAuthService(
-      OAuthPluginConfigFactory cfgFactory, OAuth20ServiceFactory oauth20ServiceFactory) {
+  CasOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
+    super("Generic CAS OAuth2");
     PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
-    rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+    rootUrl = OAuthUrls.trimTrailingSlashes(cfg.getString(OAuthConfigKeys.ROOT_URL));
     if (!URI.create(rootUrl).isAbsolute()) {
       throw new ProvisionException("Root URL must be absolute URL");
     }
-    fixLegacyUserId = cfg.getBoolean(InitOAuth.FIX_LEGACY_USER_ID, false);
+    fixLegacyUserId = cfg.getBoolean(OAuthConfigKeys.FIX_LEGACY_USER_ID, false);
     boolean useJsonExtractor = cfg.getBoolean(USE_JSON_EXTRACTOR, false);
-    service = oauth20ServiceFactory.create(PROVIDER_NAME, new CasApi(rootUrl, useJsonExtractor));
-
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    // Descriptor: default HTTP Basic client auth, bearer as an access_token query parameter, no
+    // scope. The token response is form-encoded
+    // by default (CAS's classic extractor) or JSON when use-json-extractor is set. CAS may omit
+    // token_type, so tolerate it (the empty string is stored instead of failing).
+    OAuthProviderEndpoints endpoints =
+        new OAuthProviderEndpoints(
+            String.format("%s/oauth2.0/authorize", rootUrl),
+            String.format("%s/oauth2.0/accessToken", rootUrl),
+            /* scope= */ null,
+            ClientAuthStyle.BASIC,
+            BearerPlacement.URI_QUERY_ACCESS_TOKEN,
+            useJsonExtractor ? TokenResponseFormat.JSON : TokenResponseFormat.FORM_URL_ENCODED,
+            /* tolerateMissingTokenType= */ true,
+            enablePkce);
+    client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
   }
 
   @Override
-  public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    OAuthRequest request =
-        new OAuthRequest(Verb.GET, String.format(PROTECTED_RESOURCE_URL, rootUrl));
-    OAuth2AccessToken t = new OAuth2AccessToken(token.getToken(), token.getRaw());
-    service.signRequest(t, request);
+  protected String resourceUrl() {
+    return String.format(PROTECTED_RESOURCE_URL, rootUrl);
+  }
 
-    try (Response response = service.execute(request)) {
-      if (response.getCode() != HttpServletResponse.SC_OK) {
-        throw new IOException(
-            String.format(
-                "Status %s (%s) for request %s",
-                response.getCode(), response.getBody(), request.getUrl()));
-      }
+  @Override
+  protected OAuthUserInfo parseUserInfo(String body) throws IOException {
+    JsonElement userJson = JSON.newGson().fromJson(body, JsonElement.class);
+    if (!userJson.isJsonObject()) {
+      throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
+    }
+    JsonObject jsonObject = userJson.getAsJsonObject();
 
-      if (log.isDebugEnabled()) {
-        log.debug("User info response: {}", response.getBody());
-      }
+    JsonElement id = jsonObject.get("id");
+    if (isNull(id)) {
+      throw new IOException(String.format("CAS response missing id: %s", body));
+    }
 
-      JsonElement userJson = JSON.newGson().fromJson(response.getBody(), JsonElement.class);
-      if (!userJson.isJsonObject()) {
-        throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", userJson));
-      }
-      JsonObject jsonObject = userJson.getAsJsonObject();
+    JsonElement attrListJson = jsonObject.get("attributes");
+    if (attrListJson == null) {
+      throw new IOException(String.format("CAS response missing attributes: %s", body));
+    }
 
-      JsonElement id = jsonObject.get("id");
-      if (isNull(id)) {
-        throw new IOException(String.format("CAS response missing id: %s", response.getBody()));
-      }
+    String email = null, name = null, login = null;
+    if (attrListJson.isJsonArray()) {
+      // It is possible for CAS to be configured to not return any attributes (email, name,
+      // login),
+      // in which case,
+      // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON
+      // array
+      // "attributes": []
 
-      JsonElement attrListJson = jsonObject.get("attributes");
-      if (attrListJson == null) {
-        throw new IOException(
-            String.format("CAS response missing attributes: %s", response.getBody()));
-      }
+      JsonArray attrJson = attrListJson.getAsJsonArray();
+      for (JsonElement elem : attrJson) {
+        if (elem == null || !elem.isJsonObject()) {
+          throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
+        }
+        JsonObject obj = elem.getAsJsonObject();
 
-      String email = null, name = null, login = null;
-      if (attrListJson.isJsonArray()) {
-        // It is possible for CAS to be configured to not return any attributes (email, name,
-        // login),
-        // in which case,
-        // CAS returns an empty JSON object "attributes":{}, rather than "null" or an empty JSON
-        // array
-        // "attributes": []
-
-        JsonArray attrJson = attrListJson.getAsJsonArray();
-        for (JsonElement elem : attrJson) {
-          if (elem == null || !elem.isJsonObject()) {
-            throw new IOException(String.format("Invalid JSON '%s': not a JSON Object", elem));
-          }
-          JsonObject obj = elem.getAsJsonObject();
-
-          String property = getStringElement(obj, "email");
-          if (property != null) {
-            email = property;
-          }
-          property = getStringElement(obj, "name");
-          if (property != null) {
-            name = property;
-          }
-          property = getStringElement(obj, "login");
-          if (property != null) {
-            login = property;
-          }
+        String property = getStringElement(obj, "email");
+        if (property != null) {
+          email = property;
+        }
+        property = getStringElement(obj, "name");
+        if (property != null) {
+          name = property;
+        }
+        property = getStringElement(obj, "login");
+        if (property != null) {
+          login = property;
         }
       }
-
-      return new OAuthUserInfo(
-          extIdScheme + ":" + id.getAsString(),
-          login,
-          email,
-          name,
-          fixLegacyUserId ? id.getAsString() : null);
-    } catch (ExecutionException | InterruptedException e) {
-      throw new RuntimeException("Cannot retrieve user info resource", e);
     }
+
+    return new OAuthUserInfo(
+        extIdScheme + ":" + id.getAsString(),
+        login,
+        email,
+        name,
+        fixLegacyUserId ? id.getAsString() : null);
   }
 
   private String getStringElement(JsonObject o, String name) {
@@ -159,35 +148,5 @@ public class CasOAuthService implements OAuthServiceProvider {
     }
 
     return elem.getAsString();
-  }
-
-  @Override
-  public OAuthToken getAccessToken(OAuthVerifier rv) {
-    try {
-      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
-      return new OAuthToken(
-          accessToken.getAccessToken(),
-          nullToEmpty(accessToken.getTokenType()),
-          accessToken.getRawResponse());
-    } catch (InterruptedException | ExecutionException | IOException e) {
-      String msg = "Cannot retrieve access token";
-      log.error(msg, e);
-      throw new RuntimeException(msg, e);
-    }
-  }
-
-  @Override
-  public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl();
-  }
-
-  @Override
-  public String getVersion() {
-    return service.getVersion();
-  }
-
-  @Override
-  public String getName() {
-    return "Generic CAS OAuth2";
   }
 }

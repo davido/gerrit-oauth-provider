@@ -17,13 +17,13 @@ package com.googlesource.gerrit.plugins.oauth.github;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Strings;
 import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
 import com.google.gerrit.server.config.PluginConfig;
-import com.googlesource.gerrit.plugins.oauth.InitOAuth;
-import com.googlesource.gerrit.plugins.oauth.OAuth20ServiceFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.utils.OAuthUrls;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.eclipse.jgit.lib.Config;
@@ -44,25 +44,28 @@ public class GithubApiUrlTest {
     String configSection = PLUGIN_NAME + "-" + GitHubOAuthService.PROVIDER_NAME + "-oauth";
     PluginConfig.Update pluginConfig = PluginConfig.Update.forTest(configSection, new Config());
     if (!Strings.isNullOrEmpty(rootUrl)) {
-      pluginConfig.setString(InitOAuth.ROOT_URL, rootUrl);
+      pluginConfig.setString(OAuthConfigKeys.ROOT_URL, rootUrl);
     }
-    pluginConfig.setString(InitOAuth.CLIENT_ID, TEST_CLIENT_ID);
-    pluginConfig.setString(InitOAuth.CLIENT_SECRET, "secret");
+    pluginConfig.setString(OAuthConfigKeys.CLIENT_ID, TEST_CLIENT_ID);
+    pluginConfig.setString(OAuthConfigKeys.CLIENT_SECRET, "secret");
     when(oauthPluginConfigFactoryMock.create(GitHubOAuthService.PROVIDER_NAME))
         .thenReturn(pluginConfig.asPluginConfig());
 
-    OAuth20ServiceFactory serviceFactory =
-        new OAuth20ServiceFactory(oauthPluginConfigFactoryMock, CANONICAL_URL);
-    return new GitHubOAuthService(oauthPluginConfigFactoryMock, serviceFactory);
+    HttpOAuthClientFactory serviceFactory =
+        new HttpOAuthClientFactory(oauthPluginConfigFactoryMock, CANONICAL_URL, PLUGIN_NAME);
+    return new GitHubOAuthService(
+        oauthPluginConfigFactoryMock,
+        serviceFactory,
+        new GitHubCheckTokenClient(oauthPluginConfigFactoryMock));
   }
 
   private String getExpectedUrl(String rootUrl) throws Exception {
     if (rootUrl == null) {
       rootUrl = GitHubOAuthService.GITHUB_ROOT_URL;
     }
-    rootUrl = CharMatcher.is('/').trimTrailingFrom(rootUrl) + "/";
+    rootUrl = OAuthUrls.trimTrailingSlashes(rootUrl);
     return String.format(
-        "%slogin/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s%s&scope=%s",
+        "%s/login/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s%s&scope=%s",
         rootUrl,
         TEST_CLIENT_ID,
         URLEncoder.encode(CANONICAL_URL, StandardCharsets.UTF_8.name()),

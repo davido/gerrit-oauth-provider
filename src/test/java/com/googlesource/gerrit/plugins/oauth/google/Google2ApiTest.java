@@ -16,20 +16,12 @@ package com.googlesource.gerrit.plugins.oauth.google;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
-import org.junit.Before;
 import org.junit.Test;
 
 public class Google2ApiTest {
-  private Google2Api api;
-
-  @Before
-  public void setUp() {
-    api = new Google2Api();
-  }
-
   @Test
-  public void testAccessTokenExtractor() {
-    assertThat(api.getAccessTokenExtractor()).isInstanceOf(OAuth2AccessTokenJsonExtractor.class);
+  public void getTokenInfoEndpoint_isGoogleTokeninfoUrl() {
+    assertThat(new Google2Api().getTokenInfoEndpoint())
+        .isEqualTo("https://oauth2.googleapis.com/tokeninfo");
   }
 }

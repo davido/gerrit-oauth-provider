@@ -16,20 +16,16 @@ package com.googlesource.gerrit.plugins.oauth.dex;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.scribejava.core.extractors.OAuth2AccessTokenJsonExtractor;
-import org.junit.Before;
 import org.junit.Test;
 
 public class DexApiTest {
-  private DexApi api;
-
-  @Before
-  public void setUp() {
-    api = new DexApi("");
-  }
-
   @Test
-  public void testAccessTokenExtractor() {
-    assertThat(api.getAccessTokenExtractor()).isInstanceOf(OAuth2AccessTokenJsonExtractor.class);
+  public void issuerAndJwks_underDexPath() {
+    DexApi dex = new DexApi("https://example.com");
+    // Endpoints live under /dex, so the issuer and JWKS must match that mount point.
+    assertThat(dex.getAuthorizationBaseUrl()).isEqualTo("https://example.com/dex/auth");
+    assertThat(dex.getAccessTokenEndpoint()).isEqualTo("https://example.com/dex/token");
+    assertThat(dex.getIssuer()).isEqualTo("https://example.com/dex");
+    assertThat(dex.getJwksEndpoint()).isEqualTo("https://example.com/dex/keys");
   }
 }

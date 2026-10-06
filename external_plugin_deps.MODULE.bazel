@@ -1,0 +1,19 @@
+# Module fragment for wiring this plugin's Bazel module into the
+# Gerrit in-tree build when using Bzlmod.
+#
+# This file is included from Gerrit's plugins/external_plugin_deps.MODULE.bazel.
+# It wires the plugin module into the root dependency graph and exposes
+# any repositories it creates (for example via rules_jvm_external).
+#
+# NOTE: This file must be self-contained: bindings do not cross include()
+# boundaries, so it re-declares the rules_jvm_external extension handle.
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+
+bazel_dep(name = "gerrit-oauth-provider")
+local_path_override(
+    module_name = "gerrit-oauth-provider",
+    path = "plugins/oauth",
+)
+
+use_repo(maven, "oauth_plugin_deps")

@@ -14,11 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth.dex;
 
-import com.github.scribejava.core.builder.api.DefaultApi20;
-import com.github.scribejava.core.oauth2.bearersignature.BearerSignature;
-import com.github.scribejava.core.oauth2.bearersignature.BearerSignatureURIQueryParameter;
-
-public class DexApi extends DefaultApi20 {
+/** Dex OAuth endpoint URLs, plus the issuer and JWKS used for id_token validation. */
+public class DexApi {
 
   private static final String AUTHORIZE_URL = "%s/dex/auth";
 
@@ -28,18 +25,21 @@ public class DexApi extends DefaultApi20 {
     this.rootUrl = rootUrl;
   }
 
-  @Override
   public String getAuthorizationBaseUrl() {
     return String.format(AUTHORIZE_URL, rootUrl);
   }
 
-  @Override
   public String getAccessTokenEndpoint() {
     return String.format("%s/dex/token", rootUrl);
   }
 
-  @Override
-  public BearerSignature getBearerSignature() {
-    return BearerSignatureURIQueryParameter.instance();
+  /** Dex's issuer: the root URL plus the {@code /dex} path its endpoints are mounted under. */
+  public String getIssuer() {
+    return rootUrl + "/dex";
+  }
+
+  /** JWKS endpoint: Dex serves signing keys at {@code <issuer>/keys}. */
+  public String getJwksEndpoint() {
+    return getIssuer() + "/keys";
   }
 }

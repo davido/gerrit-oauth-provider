@@ -14,77 +14,115 @@
 
 package com.googlesource.gerrit.plugins.oauth.dex;
 
-import static com.google.gerrit.json.OutputFormat.JSON;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.isNull;
-import static com.googlesource.gerrit.plugins.oauth.JsonUtil.jwtPayloadJson;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
-import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.github.scribejava.core.oauth.OAuth20Service;
-import com.google.gerrit.extensions.auth.oauth.OAuthServiceProvider;
-import com.google.gerrit.extensions.auth.oauth.OAuthToken;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.google.gerrit.common.Nullable;
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
-import com.google.gerrit.extensions.auth.oauth.OAuthVerifier;
 import com.google.gerrit.server.config.PluginConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.oauth.InitOAuth;
-import com.googlesource.gerrit.plugins.oauth.OAuth20ServiceFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthPluginConfigFactory;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderConfig;
-import com.googlesource.gerrit.plugins.oauth.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.HttpOAuthClientFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthPluginConfigFactory;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderConfig;
+import com.googlesource.gerrit.plugins.oauth.base.OAuthServiceProviderExternalIdScheme;
+import com.googlesource.gerrit.plugins.oauth.base.StandardIdTokenOAuthService;
+import com.googlesource.gerrit.plugins.oauth.client.BearerPlacement;
+import com.googlesource.gerrit.plugins.oauth.client.ClientAuthStyle;
+import com.googlesource.gerrit.plugins.oauth.client.OAuthProviderEndpoints;
+import com.googlesource.gerrit.plugins.oauth.client.TokenResponseFormat;
+import com.googlesource.gerrit.plugins.oauth.jwt.OidcJwtValidator;
+import com.googlesource.gerrit.plugins.oauth.utils.OAuthUrls;
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @OAuthServiceProviderConfig(name = DexOAuthService.PROVIDER_NAME)
-public class DexOAuthService implements OAuthServiceProvider {
-  private static final Logger log = LoggerFactory.getLogger(DexOAuthService.class);
+public class DexOAuthService extends StandardIdTokenOAuthService {
   public static final String PROVIDER_NAME = "dex";
-
-  private final OAuth20Service service;
-  private final String rootUrl;
   private final String domain;
-  private final String serviceName;
   private final String extIdScheme;
+  @Nullable private final OidcJwtValidator validator;
 
   @Inject
-  DexOAuthService(
-      OAuthPluginConfigFactory cfgFactory, OAuth20ServiceFactory oauth20ServiceFactory) {
-    PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
+  DexOAuthService(OAuthPluginConfigFactory cfgFactory, HttpOAuthClientFactory clientFactory) {
+    this(cfgFactory, clientFactory, /* providedValidator= */ null);
+  }
 
-    rootUrl = cfg.getString(InitOAuth.ROOT_URL);
+  @VisibleForTesting
+  DexOAuthService(
+      OAuthPluginConfigFactory cfgFactory,
+      HttpOAuthClientFactory clientFactory,
+      @Nullable OidcJwtValidator providedValidator) {
+    super(cfgFactory.create(PROVIDER_NAME).getString(OAuthConfigKeys.SERVICE_NAME, "Dex OAuth2"));
+    PluginConfig cfg = cfgFactory.create(PROVIDER_NAME);
+    String rootUrl = OAuthUrls.trimTrailingSlashes(cfg.getString(OAuthConfigKeys.ROOT_URL));
     if (!URI.create(rootUrl).isAbsolute()) {
       throw new ProvisionException("Root URL must be absolute URL");
     }
-    domain = cfg.getString(InitOAuth.DOMAIN, null);
-    serviceName = cfg.getString(InitOAuth.SERVICE_NAME, "Dex OAuth2");
-
-    service =
-        oauth20ServiceFactory.create(
-            PROVIDER_NAME, new DexApi(rootUrl), "openid profile email offline_access");
-
+    domain = cfg.getString(OAuthConfigKeys.DOMAIN, null);
+    boolean enablePkce = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
+    DexApi api = new DexApi(rootUrl);
+    // Descriptor: default HTTP Basic client auth, JSON token response, and the bearer as an
+    // access_token query parameter. DexApi is kept
+    // for the issuer/JWKS the id_token validator below reads.
+    OAuthProviderEndpoints endpoints =
+        new OAuthProviderEndpoints(
+            api.getAuthorizationBaseUrl(),
+            api.getAccessTokenEndpoint(),
+            "openid profile email offline_access",
+            ClientAuthStyle.BASIC,
+            BearerPlacement.URI_QUERY_ACCESS_TOKEN,
+            TokenResponseFormat.JSON,
+            /* tolerateMissingTokenType= */ false,
+            enablePkce);
+    client = clientFactory.create(PROVIDER_NAME, endpoints);
     extIdScheme = OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME);
+    this.validator =
+        providedValidator != null
+            ? providedValidator
+            : buildValidator(api, cfg.getString(OAuthConfigKeys.CLIENT_ID));
+  }
+
+  /**
+   * Builds a JWKS validator for Dex's {@code id_token}, with issuer and JWKS taken from {@link
+   * DexApi} (both under the {@code /dex} path its endpoints live at) and audience pinned to {@code
+   * client-id}. Returns {@code null} only when {@code client-id} is absent, in which case the
+   * id_token is refused rather than trusted unsigned (client-id is required to build the client).
+   */
+  @Nullable
+  private OidcJwtValidator buildValidator(DexApi api, @Nullable String clientId) {
+    if (Strings.isNullOrEmpty(clientId)) {
+      log.warn("Dex client-id is not configured; id_token signature validation is disabled");
+      return null;
+    }
+    return OidcJwtValidator.builder()
+        .jwksUri(api.getJwksEndpoint())
+        .issuer(api.getIssuer())
+        .audience(clientId)
+        .build();
+  }
+
+  /**
+   * Verifies the {@code id_token} against Dex's JWKS instead of the base class's unsigned decode.
+   */
+  @Override
+  protected JsonObject decodeIdToken(String idToken) throws IOException {
+    if (validator == null) {
+      throw new IOException("Dex id_token cannot be validated because client-id is not configured");
+    }
+    return validator.validate(idToken).payload();
   }
 
   @Override
-  public OAuthUserInfo getUserInfo(OAuthToken token) throws IOException {
-    JsonElement tokenJson = JSON.newGson().fromJson(token.getRaw(), JsonElement.class);
-    JsonObject tokenObject = tokenJson.getAsJsonObject();
-    JsonElement id_token = tokenObject.get("id_token");
-    String jwt = jwtPayloadJson(id_token.getAsString());
-
-    JsonElement claimJson = JSON.newGson().fromJson(jwt, JsonElement.class);
-
+  protected OAuthUserInfo parseClaims(JsonObject claimObject) throws IOException {
     // Dex does not support basic profile currently (2017-09), extracting info
     // from access token claim
-
-    JsonObject claimObject = claimJson.getAsJsonObject();
     JsonElement emailElement = claimObject.get("email");
     JsonElement nameElement = claimObject.get("name");
     if (isNull(emailElement)) {
@@ -100,39 +138,6 @@ public class DexOAuthService implements OAuthServiceProvider {
       username = email.replace("@" + domain, "");
     }
 
-    return new OAuthUserInfo(
-        extIdScheme + ":" + email /*externalId*/,
-        username /*username*/,
-        email /*email*/,
-        name /*displayName*/,
-        null /*claimedIdentity*/);
-  }
-
-  @Override
-  public OAuthToken getAccessToken(OAuthVerifier rv) {
-    try {
-      OAuth2AccessToken accessToken = service.getAccessToken(rv.getValue());
-      return new OAuthToken(
-          accessToken.getAccessToken(), accessToken.getTokenType(), accessToken.getRawResponse());
-    } catch (InterruptedException | ExecutionException | IOException e) {
-      String msg = "Cannot retrieve access token";
-      log.error(msg, e);
-      throw new RuntimeException(msg, e);
-    }
-  }
-
-  @Override
-  public String getAuthorizationUrl() {
-    return service.getAuthorizationUrl();
-  }
-
-  @Override
-  public String getVersion() {
-    return service.getVersion();
-  }
-
-  @Override
-  public String getName() {
-    return serviceName;
+    return new OAuthUserInfo(extIdScheme + ":" + email, username, email, name, null);
   }
 }
