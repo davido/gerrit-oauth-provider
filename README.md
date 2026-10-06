@@ -37,26 +37,31 @@ Prebuilt binary artifacts are available on [release page](https://github.com/dav
 Build
 -----
 
-To build the plugin with Bazel, install
-[Bazel](https://bazel.build/versions/master/docs/install.html) and run the
-following:
+This plugin is built with [Bazel](https://bazel.build/) inside the Gerrit
+source tree. Clone or link it into Gerrit's `plugins` directory, link its
+dependency fragment over the placeholder, and build it from the Gerrit tree:
 
 ```
+  git clone https://gerrit.googlesource.com/gerrit
   git clone https://gerrit.googlesource.com/plugins/oauth
-  cd oauth && bazel build oauth
+  cd gerrit/plugins
+  ln -s ../../oauth .
+  rm external_plugin_deps.MODULE.bazel
+  ln -s oauth/external_plugin_deps.MODULE.bazel .
+  cd ..
+  bazel build plugins/oauth
 ```
 
 Besides the default `oauth.jar`, the plugin can also be built as slim,
 single-provider artifacts that bundle just one provider plus the shared core.
 Each registers as the same `gerrit-oauth-provider` plugin and ships its own init
 step; see [Documentation/build.md](src/main/resources/Documentation/build.md)
-for the target list. SAP IAS is shipped only as the standalone `oauth-sapias`
-artifact.
+for the target list. SAP IAS is shipped only as the `oauth-sapias` artifact.
 
 Install
 -------
 
-Copy the `bazel-bin/oauth.jar` to
+Copy the `bazel-bin/plugins/oauth/oauth.jar` to
 `$gerrit_site/plugins` and re-run init to configure it:
 
 ```
