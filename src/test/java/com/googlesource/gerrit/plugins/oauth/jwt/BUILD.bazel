@@ -1,0 +1,7 @@
+load("//plugins/oauth:provider.bzl", "oauth_test")
+
+oauth_test(
+    "jwt",
+    lib = False,
+    nimbus = True,
+)

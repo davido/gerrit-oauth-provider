@@ -22,7 +22,7 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-secret = "<client-secret>"
     link-to-existing-openid-accounts = true
     enable-git-over-http = false # Optional, when true git over HTTPS can authenticate with a Google access token issued for a trusted client (client-id, or a trusted-audience entry). Not compatible with domain. See config-google.md.
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
     # enable-token-refresh = false # Optional, when true request a Google refresh_token (access_type=offline) so an expired browser access token is renewed automatically. See "Token refresh" below.
     # force-consent = false # Optional, with enable-token-refresh: send prompt=consent to force Google to re-issue a refresh_token (Google issues one only on first consent). User-visible on every login; leave off in production.
     # trusted-audience = "<cli-client-id>" # Optional, repeatable: additional Google client-ids (e.g. a Desktop client for git credential helpers) whose tokens the git path accepts. See config-google.md.
@@ -32,20 +32,20 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     enable-git-over-http = false # Optional, when true git over HTTPS can authenticate with a GitHub access token issued for this OAuth app. See config-github.md.
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-cas-oauth"]
     root-url = "<cas url>"
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     use-json-extractor = false
-    enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE (RFC 7636).
+    enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE (RFC 7636).
 
   [plugin "@PLUGIN@-gitlab-oauth"]
     root-url = "<gitlab url>"
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
     # enable-git-over-http = false # Optional, when true git over HTTPS can authenticate with a GitLab access token issued for a trusted app (client-id, or a trusted-audience entry). See config-gitlab.md.
     # required-scope = read_user # Optional, repeatable; scope(s) the Git-over-HTTP token must carry (default read_user). See config-gitlab.md.
     # trusted-audience = "<helper-client-id>" # Optional, repeatable: additional GitLab application ids (e.g. a git credential helper's client) whose tokens the git path accepts. See config-gitlab.md.
@@ -56,35 +56,35 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     root-url = "<dex url>"
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-airvantage-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-phabricator-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     root-url = "<phabricator url>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-bitbucket-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-facebook-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
 
   [plugin "@PLUGIN@-azure-oauth"]
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     tenant = "<tenant (optional defaults to organizations if not set)>"
     link-to-existing-office365-accounts = true # Optional, if set will try to link old account with the @PLUGIN@-office365-oauth naming
-    # enable-pkce = false # Optional, when true the browser authorization-code flow uses PKCE.
+    # enable-pkce = true # Optional, when true the browser authorization-code flow uses PKCE.
     # enable-git-over-http = false # Optional, when true Git-over-HTTPS can authenticate with an Azure access token that this Gerrit's Azure app minted; the plugin introspects it at Microsoft Graph /me. See the Azure section below.
 
   [plugin "@PLUGIN@-keycloak-oauth"]
@@ -95,7 +95,7 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     use-preferred-username = true # Optional, if false will not send preferred_username from Keycloak to leave username unset
-    enable-pkce = false # Optional, when true the browser flow uses PKCE (RFC 7636); required for public clients
+    enable-pkce = true # Optional, when true the browser flow uses PKCE (RFC 7636); required for public clients
     enable-git-over-http = false # Optional, when true git clone/fetch/push over HTTPS can authenticate with a Keycloak access_token. See config-keycloak.md.
 
   # Auth0, Authentik, Cognito, LemonLDAP::NG and Tuleap no longer have dedicated
@@ -108,7 +108,7 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     client-id = "<client-id>"
     client-secret = "<client-secret>"
     link-to-existing-gerrit-accounts = false
-    enable-pkce = false
+    enable-pkce = true
     enable-git-over-http = true # SAP IAS is grandfathered on; set false to disable Git-over-HTTP.
     enable-resource-owner-password-flow = false
 
@@ -116,7 +116,7 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     root-url = "<root url>" # The part before /.well-known. for example, https://kanidm.example.com/oauth2/openid/gerrit
     client-id = "<client-id>"
     client-secret = "<client-secret>"
-    enable-pkce = false
+    enable-pkce = true
     enable-git-over-http = false # Optional, when true git over HTTPS can authenticate with an IdP-signed JWT whose aud is this client-id. Requires the discovery document to expose jwks_uri. See config-discovery.md.
     # external-id-scheme = discovery-oauth # Optional; the external-id scheme (default discovery-oauth). Set it to a removed wrapper's scheme (e.g. auth0-oauth) to migrate that provider to Discovery without unlinking accounts. See config-discovery.md.
     # link-to-existing-gerrit-accounts = false # Optional; when true the browser flow sets a gerrit:<username> claimed identity to link a first login to an existing account (matches Authentik/Cognito). See config-discovery.md.

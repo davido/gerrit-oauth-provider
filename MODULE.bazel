@@ -1,50 +1,7 @@
 module(name = "gerrit-oauth-provider")
 
 bazel_dep(name = "rules_jvm_external", version = "6.10")
-bazel_dep(name = "com_googlesource_gerrit_bazlets")
-git_override(
-    module_name = "com_googlesource_gerrit_bazlets",
-    commit = "202b90383675fd8a759a865a4e0efe75de9a8932",
-    remote = "https://gerrit.googlesource.com/bazlets",
-)
-
-GERRIT_API_VERS = "3.11.0"
-
-gerrit_api_version = use_repo_rule("@com_googlesource_gerrit_bazlets//:gerrit_api_version.bzl", "gerrit_api_version")
-
-gerrit_api_version(
-    name = "gerrit_api_version",
-    version = GERRIT_API_VERS,
-    visibility = ["//visibility:public"],
-)
-
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
-maven.install(
-    name = "external_plugin_deps",
-    artifacts = [
-        "com.google.gerrit:gerrit-plugin-api:" + GERRIT_API_VERS,
-        "com.google.gerrit:gerrit-acceptance-framework:" + GERRIT_API_VERS,
-    ],
-    # IMPORTANT:
-    # Do NOT set lock_file here.
-    #
-    # This repository is intentionally shared across plugins and contains
-    # only Gerrit-provided APIs (gerrit-plugin-api and acceptance framework)
-    # that are provided by Gerrit at runtime and must not be bundled into
-    # the plugin JAR.
-    #
-    # When built in-tree, rules_jvm_external merges maven.install() tags
-    # with the same name across all modules. Defining a lock_file for this
-    # shared repository in more than one plugin causes multiple lock files
-    # to be contributed for the same repository name, which is rejected by
-    # rules_jvm_external during module extension evaluation.
-    #
-    # Plugin runtime dependencies must instead be declared in a
-    # plugin-specific repository (e.g. oauth_plugin_deps) that owns
-    # its own lock file.
-)
-use_repo(maven, "external_plugin_deps")
-
 maven.install(
     name = "oauth_plugin_deps",
     artifacts = [

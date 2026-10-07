@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth.github;
+package com.googlesource.gerrit.plugins.oauth.dex;
 
-import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_GIT_OVER_HTTP;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_PKCE;
-import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.FIX_LEGACY_USER_ID;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ROOT_URL;
 
 import com.google.gerrit.extensions.annotations.PluginName;
 import com.google.gerrit.pgm.init.api.ConsoleUI;
@@ -24,22 +23,21 @@ import com.google.gerrit.pgm.init.api.Section;
 import com.google.inject.Inject;
 import com.googlesource.gerrit.plugins.oauth.base.AbstractOAuthInitStep;
 
-/** {@code Gerrit-InitStep} for the standalone {@code oauth-github} plugin artifact. */
-public class GitHubInitStep extends AbstractOAuthInitStep {
+/** {@code Gerrit-InitStep} for the standalone {@code oauth-dex} plugin artifact. */
+public class DexInitStep extends AbstractOAuthInitStep {
 
   @Inject
-  public GitHubInitStep(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
+  public DexInitStep(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
     super(ui, sections, pluginName);
   }
 
   @Override
   public void configure() {
-    Section s = getConfigSection(GitHubOAuthService.class);
-    if (ui.yesno(isConfigured(s), "Use GitHub OAuth provider for Gerrit login?")
+    Section s = getConfigSection(DexOAuthService.class);
+    if (ui.yesno(isConfigured(s), "Use Dex OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
-      s.string(FIX_LEGACY_USER_ID_QUESTION, FIX_LEGACY_USER_ID, "false");
-      s.string("Enable PKCE for GitHub OAuth provider?", ENABLE_PKCE, "true");
-      s.string("Enable Git-over-HTTP for GitHub OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
+      checkRootUrl(s.string("Dex Root URL", ROOT_URL, null));
+      s.string("Enable PKCE for Dex OAuth provider?", ENABLE_PKCE, "true");
     }
   }
 }

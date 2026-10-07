@@ -40,7 +40,7 @@ public class KeycloakInitStep extends AbstractOAuthInitStep {
         && configureOAuth(s)) {
       checkRootUrl(s.string("Keycloak Root URL", ROOT_URL, null));
       s.string("Keycloak Realm", REALM, null);
-      s.string("Enable PKCE for Keycloak OAuth provider?", ENABLE_PKCE, "false");
+      s.string("Enable PKCE for Keycloak OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for Keycloak OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
   }

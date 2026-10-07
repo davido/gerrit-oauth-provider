@@ -1,0 +1,19 @@
+load(
+    "@com_googlesource_gerrit_bazlets//:gerrit_plugin.bzl",
+    "gerrit_plugin_ext_test_deps",
+    "gerrit_plugin_tests",
+)
+load("//plugins/oauth:provider.bzl", "CORE")
+
+gerrit_plugin_ext_test_deps(
+    name = "providers_test_deps",
+    ext_deps = ["com.nimbusds:nimbus-jose-jwt"],
+    plugin = "oauth",
+)
+
+# Full-module and base-service tests not tied to a single provider.
+gerrit_plugin_tests(
+    name = "oauth_plugin_tests",
+    srcs = glob(["*.java"]),
+    deps = CORE,
+)

@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlesource.gerrit.plugins.oauth.discovery;
+package com.googlesource.gerrit.plugins.oauth.gitlab;
 
-import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.CLIENT_AUTH_METHOD;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_GIT_OVER_HTTP;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_PKCE;
-import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ROOT_URL;
 
 import com.google.gerrit.extensions.annotations.PluginName;
@@ -26,25 +24,22 @@ import com.google.gerrit.pgm.init.api.Section;
 import com.google.inject.Inject;
 import com.googlesource.gerrit.plugins.oauth.base.AbstractOAuthInitStep;
 
-/** {@code Gerrit-InitStep} for the standalone {@code oauth-discovery} plugin artifact. */
-public class DiscoveryInitStep extends AbstractOAuthInitStep {
+/** {@code Gerrit-InitStep} for the standalone {@code oauth-gitlab} plugin artifact. */
+public class GitLabInitStep extends AbstractOAuthInitStep {
 
   @Inject
-  public DiscoveryInitStep(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
+  public GitLabInitStep(ConsoleUI ui, Section.Factory sections, @PluginName String pluginName) {
     super(ui, sections, pluginName);
   }
 
   @Override
   public void configure() {
-    Section s = getConfigSection(DiscoveryOAuthService.class);
-    if (ui.yesno(isConfigured(s), "Use Well Known Discovery OAuth provider for Gerrit login?")
+    Section s = getConfigSection(GitLabOAuthService.class);
+    if (ui.yesno(isConfigured(s), "Use GitLab OAuth provider for Gerrit login?")
         && configureOAuth(s)) {
-      checkRootUrl(s.string("Discovery Root URL(before `/.well-known')", ROOT_URL, null));
-      s.string("Enable PKCE for Discovery OAuth provider?", ENABLE_PKCE, "true");
-      s.string("Enable Git-over-HTTP for Discovery OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
-      s.string("Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
-      s.string(
-          "Client authentication method (basic or request-body)?", CLIENT_AUTH_METHOD, "basic");
+      checkRootUrl(s.string("GitLab Root URL", ROOT_URL, null));
+      s.string("Enable PKCE for GitLab OAuth provider?", ENABLE_PKCE, "true");
+      s.string("Enable Git-over-HTTP for GitLab OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
     }
   }
 }

@@ -1,0 +1,38 @@
+load(
+    "@com_googlesource_gerrit_bazlets//:gerrit_plugin.bzl",
+    "gerrit_plugin",
+    "gerrit_plugin_library",
+)
+load("//plugins/oauth:provider.bzl", "CORE")
+
+gerrit_plugin_library(
+    name = "sapias",
+    srcs = glob(
+        ["*.java"],
+        exclude = ["*PluginModule.java"],
+    ),
+    ext_deps = [
+        "com.sap.cloud.security.java:api",
+        "com.sap.cloud.security.java:security",
+        "com.sap.cloud.security:env",
+        "com.sap.cloud.security.xsuaa:token-client",
+    ],
+    plugin = "oauth",
+    visibility = ["//plugins/oauth:__subpackages__"],
+    deps = CORE,
+)
+
+gerrit_plugin(
+    name = "oauth-sapias",
+    srcs = ["SAPIasPluginModule.java"],
+    dir_name = "oauth",
+    manifest_entries = [
+        "Gerrit-PluginName: gerrit-oauth-provider",
+        "Gerrit-Module: com.googlesource.gerrit.plugins.oauth.sapias.SAPIasPluginModule",
+        "Gerrit-InitStep: com.googlesource.gerrit.plugins.oauth.sapias.SAPIasInitStep",
+        "Implementation-Title: Gerrit OAuth authentication provider for sapias",
+        "Implementation-URL: https://github.com/davido/gerrit-oauth-provider",
+    ],
+    resources = ["//plugins/oauth:oauth_resources"],
+    deps = [":sapias"] + CORE,
+)
