@@ -69,6 +69,8 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
     }
     String realm = cfg.getString(OAuthConfigKeys.REALM);
     boolean usePreferredUsername = cfg.getBoolean(OAuthConfigKeys.USE_PREFERRED_USERNAME, true);
+    boolean linkToExistingGerrit =
+        cfg.getBoolean(OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT, false);
     boolean enablePKCE = cfg.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false);
     this.refreshEnabled = cfg.getBoolean(OAuthConfigKeys.ENABLE_TOKEN_REFRESH, false);
     String clientId =
@@ -102,7 +104,9 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
     }
     userInfoMapper =
         new KeycloakUserInfoMapper(
-            usePreferredUsername, OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME));
+            usePreferredUsername,
+            OAuthServiceProviderExternalIdScheme.create(PROVIDER_NAME),
+            linkToExistingGerrit);
   }
 
   /** Verifies the {@code id_token} signature against the realm's JWKS before reading its claims. */
@@ -113,7 +117,7 @@ public class KeycloakOAuthService extends StandardIdTokenOAuthService {
 
   @Override
   protected OAuthUserInfo parseClaims(JsonObject claimObject) throws IOException {
-    return userInfoMapper.map(claimObject);
+    return userInfoMapper.mapForBrowser(claimObject);
   }
 
   @Override

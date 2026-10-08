@@ -160,6 +160,49 @@ public class KeycloakOAuthServiceTest {
   }
 
   @Test
+  public void getUserInfo_linkToExistingGerrit_setsClaimedIdentity() throws Exception {
+    // link-to-existing-gerrit-accounts makes the browser flow emit gerrit:<username> as claimed
+    // identity, matching the Discovery and SAP IAS providers.
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT, false))
+        .thenReturn(true);
+    String jwt = sign(rsaKey, claims().build());
+
+    OAuthUserInfo userInfo = service().getUserInfo(idTokenResponse(jwt));
+
+    assertThat(userInfo.getClaimedIdentity()).isEqualTo("gerrit:alice");
+  }
+
+  @Test
+  public void getUserInfo_linkToExisting_missingUsername_failsClosed() throws Exception {
+    // link enabled but no username -> fail closed, so linking is never silently skipped.
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT, false))
+        .thenReturn(true);
+    JWTClaimsSet noUsername =
+        baseClaims().claim("email", "alice@example.com").claim("name", "Alice Example").build();
+    String jwt = sign(rsaKey, noUsername);
+
+    assertThrows(IOException.class, () -> service().getUserInfo(idTokenResponse(jwt)));
+  }
+
+  @Test
+  public void getUserInfo_linkToExisting_blankUsername_failsClosed() throws Exception {
+    when(mockPluginConfig.getBoolean(OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT, false))
+        .thenReturn(true);
+    String jwt = sign(rsaKey, claims().claim("preferred_username", "   ").build());
+
+    assertThrows(IOException.class, () -> service().getUserInfo(idTokenResponse(jwt)));
+  }
+
+  @Test
+  public void getUserInfo_default_noClaimedIdentity() throws Exception {
+    String jwt = sign(rsaKey, claims().build());
+
+    OAuthUserInfo userInfo = service().getUserInfo(idTokenResponse(jwt));
+
+    assertThat(userInfo.getClaimedIdentity()).isNull();
+  }
+
+  @Test
   public void constructor_buildsKeycloakDescriptor() {
     when(mockPluginConfig.getBoolean(OAuthConfigKeys.ENABLE_PKCE, false)).thenReturn(true);
 

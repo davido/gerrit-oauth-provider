@@ -16,6 +16,7 @@ package com.googlesource.gerrit.plugins.oauth.keycloak;
 
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_GIT_OVER_HTTP;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ENABLE_PKCE;
+import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.LINK_TO_EXISTING_GERRIT_ACCOUNT;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.REALM;
 import static com.googlesource.gerrit.plugins.oauth.base.OAuthConfigKeys.ROOT_URL;
 
@@ -42,6 +43,7 @@ public class KeycloakInitStep extends AbstractOAuthInitStep {
       s.string("Keycloak Realm", REALM, null);
       s.string("Enable PKCE for Keycloak OAuth provider?", ENABLE_PKCE, "true");
       s.string("Enable Git-over-HTTP for Keycloak OAuth provider?", ENABLE_GIT_OVER_HTTP, "false");
+      s.string("Link to existing gerrit accounts?", LINK_TO_EXISTING_GERRIT_ACCOUNT, "false");
     }
   }
 }

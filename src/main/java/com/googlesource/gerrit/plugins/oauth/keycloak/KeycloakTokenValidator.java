@@ -66,10 +66,13 @@ class KeycloakTokenValidator implements OAuthTokenValidator {
               .audience(clientId)
               .build();
     }
+    // the Git-over-HTTP path never links to existing accounts; validate() uses map(), which
+    // ignores the flag, so pass false here.
     this.userInfoMapper =
         new KeycloakUserInfoMapper(
             usePreferredUsername,
-            OAuthServiceProviderExternalIdScheme.create(KeycloakOAuthService.PROVIDER_NAME));
+            OAuthServiceProviderExternalIdScheme.create(KeycloakOAuthService.PROVIDER_NAME),
+            /* linkToExistingGerrit= */ false);
   }
 
   @Override
