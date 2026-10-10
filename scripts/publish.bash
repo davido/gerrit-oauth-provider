@@ -26,6 +26,11 @@ TAG="${1:?usage: publish.bash <tag> [gerrit-tree]}"
 GERRIT_DIR="${2:-$PWD}"
 REPO="davido/gerrit-oauth-provider"
 
+# Release jars are built on the stable Gerrit lines, which still support Java 21
+# (master dropped it). Those trees define the `java21` bazelrc config; build with
+# it so the toolchain matches. Override with CONFIG= for a different line.
+CONFIG="${CONFIG:-java21}"
+
 # Standalone provider artifacts. Keep in sync with the provider list in
 # BUILD.bazel, plus sapias (which only ships standalone).
 PROVIDERS=(
@@ -55,8 +60,8 @@ for p in "${PROVIDERS[@]}"; do
 done
 
 if (( "${BUILD:-1}" )); then
-  echo ">> Building ${#targets[@]} artifacts ..."
-  bazelisk build "${targets[@]}"
+  echo ">> Building ${#targets[@]} artifacts with --config=${CONFIG} ..."
+  bazelisk build --config="${CONFIG}" "${targets[@]}"
 else
   echo ">> Skipping build (BUILD=0); using existing bazel-bin artifacts."
 fi
