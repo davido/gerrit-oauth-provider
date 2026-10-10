@@ -81,6 +81,8 @@ public class KeycloakTokenValidatorTest {
     assertThat(userInfo.getUserName()).isEqualTo("alice");
     assertThat(userInfo.getExternalId()).isEqualTo("keycloak-oauth:alice");
     assertThat(userInfo.getEmailAddress()).isEqualTo("alice@example.com");
+    // the Git path uses map(), not mapForBrowser(), so it never links to an existing account.
+    assertThat(userInfo.getClaimedIdentity()).isNull();
   }
 
   @Test

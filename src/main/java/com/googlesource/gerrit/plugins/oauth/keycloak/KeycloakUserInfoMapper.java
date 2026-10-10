@@ -14,6 +14,8 @@
 
 package com.googlesource.gerrit.plugins.oauth.keycloak;
 
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.asString;
+import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.firstPresent;
 import static com.googlesource.gerrit.plugins.oauth.utils.JsonUtil.isNull;
 
 import com.google.gerrit.extensions.auth.oauth.OAuthUserInfo;
@@ -25,13 +27,42 @@ import java.io.IOException;
 final class KeycloakUserInfoMapper {
   private final boolean usePreferredUsername;
   private final String extIdScheme;
+  private final boolean linkToExistingGerrit;
 
-  KeycloakUserInfoMapper(boolean usePreferredUsername, String extIdScheme) {
+  KeycloakUserInfoMapper(
+      boolean usePreferredUsername, String extIdScheme, boolean linkToExistingGerrit) {
     this.usePreferredUsername = usePreferredUsername;
     this.extIdScheme = extIdScheme;
+    this.linkToExistingGerrit = linkToExistingGerrit;
   }
 
+  /** Maps to Gerrit user info with no claimed identity. Used by the Git-over-HTTP path. */
   OAuthUserInfo map(JsonObject claimObject) throws IOException {
+    return build(claimObject, /* claimedIdentity= */ null);
+  }
+
+  /**
+   * Browser mapping: when link-to-existing-gerrit-accounts is set, adds a {@code gerrit:<username>}
+   * claimed identity so a first login links to an existing account (matching the Discovery and SAP
+   * IAS providers). Fails closed if linking is requested but no preferred_username is present, so
+   * linking is never silently skipped. Claimed identity is only read by the browser {@code
+   * OAuthSession}; the Git path uses {@link #map} and is unaffected by the flag.
+   */
+  OAuthUserInfo mapForBrowser(JsonObject claimObject) throws IOException {
+    String claimedIdentity = null;
+    if (linkToExistingGerrit) {
+      String usernameStr = asString(firstPresent(claimObject, "preferred_username"));
+      if (usernameStr == null || usernameStr.isBlank()) {
+        throw new IOException(
+            "link-to-existing-gerrit-accounts is set but the response has no"
+                + " preferred_username to build the gerrit:<username> claimed identity");
+      }
+      claimedIdentity = "gerrit:" + usernameStr;
+    }
+    return build(claimObject, claimedIdentity);
+  }
+
+  private OAuthUserInfo build(JsonObject claimObject, String claimedIdentity) throws IOException {
     JsonElement usernameElement = claimObject.get("preferred_username");
     JsonElement emailElement = claimObject.get("email");
     JsonElement nameElement = claimObject.get("name");
@@ -48,6 +79,10 @@ final class KeycloakUserInfoMapper {
     String username = usePreferredUsername ? usernameAsString : null;
     String externalId = extIdScheme + ":" + usernameAsString;
     return new OAuthUserInfo(
-        externalId, username, emailElement.getAsString(), nameElement.getAsString(), null);
+        externalId,
+        username,
+        emailElement.getAsString(),
+        nameElement.getAsString(),
+        claimedIdentity);
   }
 }

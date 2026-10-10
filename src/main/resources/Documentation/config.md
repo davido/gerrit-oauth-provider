@@ -97,6 +97,7 @@ appended with provider suffix: e.g. `-google-oauth` or `-github-oauth`:
     use-preferred-username = true # Optional, if false will not send preferred_username from Keycloak to leave username unset
     enable-pkce = true # Optional, when true the browser flow uses PKCE (RFC 7636); required for public clients
     enable-git-over-http = false # Optional, when true git clone/fetch/push over HTTPS can authenticate with a Keycloak access_token. See config-keycloak.md.
+    # link-to-existing-gerrit-accounts = false # Optional; when true the browser flow sets a gerrit:<preferred_username> claimed identity to link a first login to an existing account.
 
   # Auth0, Authentik, Cognito, LemonLDAP::NG and Tuleap no longer have dedicated
   # sections. They are generic OpenID Connect providers and have been removed in
@@ -445,9 +446,13 @@ The root URL will be the protocol and hostname of your Keycloak instance (for ex
 You can optionally set `use-preferred-username = false` if you would prefer to not have the `preferred_username`
 token be automatically set as the users username, and instead let users choose their own usernames.
 
+You can optionally set `link-to-existing-gerrit-accounts = true` if you want the provider to link an account based
+on the username instead of trying to create a new account, see
+[Linking to existing (LDAP) Gerrit accounts](#linking-to-existing-ldap-gerrit-accounts) below.
+
 ### Linking to existing (LDAP) Gerrit accounts
 
-The SAP IAS and Discovery providers support
+The SAP IAS, Discovery and Keycloak providers support
 `link-to-existing-gerrit-accounts = true`, which links a login to an existing
 Gerrit account by username instead of always creating a new account.
 
