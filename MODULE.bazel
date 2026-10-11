@@ -1,11 +1,12 @@
 module(name = "gerrit-oauth-provider")
 
-bazel_dep(name = "rules_jvm_external", version = "6.10")
+bazel_dep(name = "rules_jvm_external", version = "7.1")
+
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     name = "oauth_plugin_deps",
     artifacts = [
-        "com.nimbusds:nimbus-jose-jwt:10.9.1",
+        "com.nimbusds:nimbus-jose-jwt:10.10",
         "com.sap.cloud.security:java-security:3.6.0",
     ],
     duplicate_version_warning = "error",
