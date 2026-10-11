@@ -5,7 +5,7 @@ gerrit_plugin_library(
     srcs = glob(["*.java"]),
     visibility = ["//plugins/oauth:__subpackages__"],
     deps = [
-        "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/client",
-        "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/utils",
+        "//plugins/oauth/java/com/googlesource/gerrit/plugins/oauth/client",
+        "//plugins/oauth/java/com/googlesource/gerrit/plugins/oauth/utils",
     ],
 )

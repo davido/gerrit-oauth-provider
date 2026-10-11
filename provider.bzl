@@ -8,8 +8,8 @@ load(
 )
 
 _PKG = "com.googlesource.gerrit.plugins.oauth."
-_MAIN = "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/"
-_NIMBUS = "//plugins/oauth/src/test/java/com/googlesource/gerrit/plugins/oauth:providers_test_deps"
+_MAIN = "//plugins/oauth/java/com/googlesource/gerrit/plugins/oauth/"
+_NIMBUS = "//plugins/oauth/javatests/com/googlesource/gerrit/plugins/oauth:providers_test_deps"
 
 # The shared-core libraries every OAuth artifact compiles against and bundles.
 CORE = [_MAIN + pkg for pkg in [

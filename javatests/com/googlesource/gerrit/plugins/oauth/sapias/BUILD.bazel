@@ -21,6 +21,6 @@ gerrit_plugin_tests(
     srcs = glob(["*.java"]),
     deps = CORE + [
         ":sapias_test_deps",
-        "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/sapias",
+        "//plugins/oauth/java/com/googlesource/gerrit/plugins/oauth/sapias",
     ],
 )

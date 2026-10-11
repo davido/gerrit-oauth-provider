@@ -3,12 +3,12 @@ load("//plugins/oauth:provider.bzl", "CORE")
 
 filegroup(
     name = "oauth_resources",
-    srcs = glob(["src/main/resources/**/*"]),
+    srcs = glob(["resources/**/*"]),
     visibility = ["//plugins/oauth:__subpackages__"],
 )
 
 gerrit_plugin(
-    srcs = glob(["src/main/java/**/*.java"]),
+    srcs = glob(["java/**/*.java"]),
     ext_deps = ["com.nimbusds:nimbus-jose-jwt"],
     manifest_entries = [
         "Gerrit-PluginName: gerrit-oauth-provider",
@@ -20,7 +20,7 @@ gerrit_plugin(
     plugin = "oauth",
     resources = [":oauth_resources"],
     deps = [
-        "//plugins/oauth/src/main/java/com/googlesource/gerrit/plugins/oauth/" + provider
+        "//plugins/oauth/java/com/googlesource/gerrit/plugins/oauth/" + provider
         for provider in [
             "airvantage",
             "azure",
